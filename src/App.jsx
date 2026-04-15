@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
-import { LayoutDashboard, CheckCircle, AlertCircle, Smartphone } from 'lucide-react';
+import Analytics from './components/Analytics';
+import { LayoutDashboard, CheckCircle, AlertCircle, Smartphone, BarChart2 } from 'lucide-react';
 
 const PersonnelView = ({ addToast }) => (
   <>
@@ -13,7 +14,7 @@ const PersonnelView = ({ addToast }) => (
         </div>
         <div>
           <h1 className="header-title">QLCV Field</h1>
-          <p className="header-subtitle">Nhân sự hiện trường</p>
+          <p className="header-subtitle">Nhân sự hỗ trợ</p>
         </div>
       </div>
       <div className="sync-status">
@@ -40,7 +41,10 @@ const AdminView = ({ addToast }) => (
         </div>
         <div>
           <h1 className="header-title">QLCV Admin</h1>
-          <p className="header-subtitle">Dispatcher Control</p>
+          <div className="header-subtitle" style={{ display: 'flex', gap: '1rem', marginTop: '0.4rem' }}>
+            <Link to="/admin" style={{ color: '#FF0080', textDecoration: 'none', fontWeight: 800 }}>● ĐIỀU PHỐI</Link>
+            <Link to="/admin/report" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>THỐNG KÊ</Link>
+          </div>
         </div>
       </div>
       <div className="sync-status">
@@ -76,6 +80,35 @@ const AdminView = ({ addToast }) => (
   </>
 );
 
+const ReportView = () => (
+  <>
+    <header className="app-header">
+      <div className="header-left">
+        <div className="header-icon" style={{ background: 'var(--bg-hover)' }}>
+          <BarChart2 size={24} style={{ color: '#3B82F6' }} />
+        </div>
+        <div>
+          <h1 className="header-title" style={{ color: '#fff' }}>Báo Cáo Phân Tích</h1>
+          <div className="header-subtitle" style={{ display: 'flex', gap: '1rem', marginTop: '0.4rem' }}>
+            <Link to="/admin" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>ĐIỀU PHỐI</Link>
+            <Link to="/admin/report" style={{ color: '#3B82F6', textDecoration: 'none', fontWeight: 800 }}>● THỐNG KÊ</Link>
+          </div>
+        </div>
+      </div>
+      <div className="sync-status">
+        <div className="sync-badge">
+          <span className="sync-dot"></span>
+          Real-time
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <Analytics />
+    </main>
+  </>
+);
+
 function App() {
   const [toasts, setToasts] = useState([]);
 
@@ -93,6 +126,7 @@ function App() {
         <Routes>
           <Route path="/" element={<PersonnelView addToast={addToast} />} />
           <Route path="/admin" element={<AdminView addToast={addToast} />} />
+          <Route path="/admin/report" element={<ReportView />} />
         </Routes>
 
         {/* Footer */}

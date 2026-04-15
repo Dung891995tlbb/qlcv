@@ -66,8 +66,25 @@ const TaskList = ({ onToast, isAdmin }) => {
       const tasksData = [];
       let newPendingTasksCount = 0;
 
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
       querySnapshot.forEach((docSnap) => {
-        tasksData.push({ id: docSnap.id, ...docSnap.data() });
+        const data = docSnap.data();
+        const isPending = data.status === 'pending';
+        let include = true;
+
+        if (!isPending && data.completedAt) {
+          const completedDate = data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt);
+          // Nếu hoàn thành trước ngày hôm nay -> Archive (ẩn)
+          if (completedDate < todayStart) {
+            include = false;
+          }
+        }
+
+        if (include) {
+          tasksData.push({ id: docSnap.id, ...data });
+        }
       });
 
       // Kiểm tra xem có task nào MỚI được thêm vào không (chỉ check sau lần load đầu tiên)
