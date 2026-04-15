@@ -4,32 +4,30 @@ import { Clock, MapPin, User, CheckCircle, Trash2 } from 'lucide-react';
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const TaskCard = ({ task, onToast }) => {
-  const [now, setNow] = useState(new Date());
+const TaskCard = ({ task, onToast, now }) => {
   const [completing, setCompleting] = useState(false);
 
-  // Lấy thời điểm tạo task (Firebase Timestamp hoặc Date)
+  // Lấy thời điểm tạo task
   const createdDate = useMemo(() => {
     if (!task.createdAt) return null;
     return task.createdAt.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
   }, [task.createdAt]);
 
-  // Cập nhật đồng hồ hiện tại mỗi 10 giây
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Tính thời gian chờ
+  // Bộ đếm thời gian (MM:SS) theo thời gian thực
   const waitDisplay = useMemo(() => {
-    if (!createdDate) return 'Vừa tạo';
+    if (!createdDate || !now) return 'Vừa tạo';
     const totalSec = differenceInSeconds(now, createdDate);
-    if (totalSec < 60) return `${totalSec} giây`;
-    const mins = differenceInMinutes(now, createdDate);
-    if (mins < 60) return `${mins} phút`;
-    const hours = Math.floor(mins / 60);
-    const remainMins = mins % 60;
-    return `${hours}h ${remainMins}p`;
+    if (totalSec < 0) return '00:00';
+    
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    
+    const mStr = m.toString().padStart(2, '0');
+    const sStr = s.toString().padStart(2, '0');
+    
+    if (h > 0) return `${h}:${mStr}:${sStr}`;
+    return `${mStr}:${sStr}`;
   }, [createdDate, now]);
 
   const waitMinutes = createdDate ? differenceInMinutes(now, createdDate) : 0;

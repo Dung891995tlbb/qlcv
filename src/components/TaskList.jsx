@@ -1,25 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import TaskCard from './TaskCard';
-import { Search, Inbox } from 'lucide-react';
+import { Search, Inbox, BellRing } from 'lucide-react';
+
+const playNotificationSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    osc.type = 'sine';
+    // Tiếng chuông êm tai hơn (G5)
+    osc.frequency.setValueAtTime(783.99, ctx.currentTime);
+    
+    // Tăng âm lượng mượt mà và giảm dần từ từ
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+    
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 1.2);
+  } catch (e) {
+    console.error("Audio error", e);
+  }
+};
 
 const TaskList = ({ onToast }) => {
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [globalNow, setGlobalNow] = useState(new Date());
+  const isInitialLoad = useRef(true);
+
+  // Bộ đếm thời gian dùng chung (tick mỗi 1 giây)
+  useEffect(() => {
+    const timer = setInterval(() => setGlobalNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Xin quyền thông báo ngay khi mở
+  useEffect(() => {
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        setNotificationsEnabled(true);
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") setNotificationsEnabled(true);
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const tasksData = [];
+      let newPendingTasksCount = 0;
+
       querySnapshot.forEach((docSnap) => {
         tasksData.push({ id: docSnap.id, ...docSnap.data() });
       });
+
+      // Kiểm tra xem có task nào MỚI được thêm vào không (chỉ check sau lần load đầu tiên)
+      querySnapshot.docChanges().forEach((change) => {
+        if (!isInitialLoad.current && change.type === "added" && change.doc.data().status === 'pending') {
+          newPendingTasksCount++;
+        }
+      });
+
+      if (newPendingTasksCount > 0) {
+        playNotificationSound();
+        if (Notification.permission === 'granted') {
+          new Notification("QLCV Hub", { 
+            body: `Có ${newPendingTasksCount} công việc mới!`,
+            icon: '/favicon.svg'
+          });
+        }
+      }
+
       setTasks(tasksData);
       setLoading(false);
+      isInitialLoad.current = false;
     }, (error) => {
       console.error("Lỗi Real-time:", error);
       setLoading(false);
@@ -70,6 +140,13 @@ const TaskList = ({ onToast }) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <div 
+          className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-1 ${notificationsEnabled ? 'text-accent bg-accent-glow border border-accent/20 rounded-md' : 'text-text-muted'} transition-all`}
+          style={{ pointerEvents: 'none' }}
+        >
+          <BellRing size={12} />
+          {notificationsEnabled ? 'Thông báo ON' : 'Thông báo OFF'}
+        </div>
       </div>
 
       {/* Filter */}
@@ -113,7 +190,7 @@ const TaskList = ({ onToast }) => {
           </>
         ) : filteredTasks.length > 0 ? (
           filteredTasks.map(task => (
-            <TaskCard key={task.id} task={task} onToast={onToast} />
+            <TaskCard key={task.id} task={task} onToast={onToast} now={globalNow} />
           ))
         ) : (
           <div className="glass empty-state">
