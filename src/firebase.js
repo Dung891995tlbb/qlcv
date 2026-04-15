@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 // Cấu hình Firebase lấy từ file .env
 const firebaseConfig = {
@@ -15,7 +15,9 @@ const firebaseConfig = {
 // Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 
-// Khởi tạo Firestore để dùng chung trong ứng dụng
-const db = getFirestore(app);
+// Khởi tạo Firestore với tính năng Offline Persistence mạnh mẽ
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 
 export { db };
