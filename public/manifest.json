@@ -1,0 +1,17 @@
+{
+  "name": "QLCV Hub",
+  "short_name": "QLCV",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#06b6d4",
+  "description": "Hệ thống quản lý công việc và điều phối nhân sự thời gian thực",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
