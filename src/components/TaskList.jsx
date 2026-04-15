@@ -99,9 +99,13 @@ const TaskList = ({ onToast, isAdmin }) => {
         if (a.status === 'pending' && b.status === 'completed') return -1;
         if (a.status === 'completed' && b.status === 'pending') return 1;
 
-        // Tầng 2: Nếu cả hai đều Pending -> Ưu tiên đứa đợi lâu nhất (createdAt nhỏ nhất) lên đầu
+        // Tầng 1.5: Khách VIP (GẤP) đưa lên trên cùng của Cùng 1 nhóm Đang Chờ
         if (a.status === 'pending' && b.status === 'pending') {
-          return getTime(a.createdAt) - getTime(b.createdAt);
+           if (a.isUrgent && !b.isUrgent) return -1;
+           if (!a.isUrgent && b.isUrgent) return 1;
+           // Tầng 2: Nếu cả hai đều Pending (cùng mức Gấp hoặc cùng mức Thường) 
+           // -> Ưu tiên đứa đợi lâu nhất (createdAt nhỏ nhất) lên đầu
+           return getTime(a.createdAt) - getTime(b.createdAt);
         }
 
         // Tầng 3: Nếu cả hai đều Completed -> Ưu tiên đưa thẻ MỚI hoàn thành gần đây nhất lên trên

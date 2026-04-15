@@ -7,7 +7,8 @@ const TaskForm = ({ onToast }) => {
   const [formData, setFormData] = useState({
     customerName: '',
     address: '',
-    content: ''
+    content: '',
+    isUrgent: false
   });
   const [loading, setLoading] = useState(false);
   const nameInputRef = useRef(null);
@@ -28,10 +29,11 @@ const TaskForm = ({ onToast }) => {
         address: formData.address.trim(),
         content: formData.content.trim(),
         status: 'pending',
+        isUrgent: formData.isUrgent,
         createdAt: serverTimestamp()
       });
 
-      setFormData({ customerName: '', address: '', content: '' });
+      setFormData({ customerName: '', address: '', content: '', isUrgent: false });
       nameInputRef.current?.focus();
       onToast?.('success', 'Đã tạo công việc mới!');
     } catch (error) {
@@ -86,6 +88,17 @@ const TaskForm = ({ onToast }) => {
             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
             required
           ></textarea>
+        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+          <input
+            id="isUrgent"
+            type="checkbox"
+            checked={formData.isUrgent}
+            onChange={(e) => setFormData({ ...formData, isUrgent: e.target.checked })}
+            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#EF4444' }}
+          />
+          <label htmlFor="isUrgent" style={{ color: '#EF4444', fontWeight: 800, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none' }}>
+            ĐÁNH DẤU GẤP (VIP)
+          </label>
         </div>
         <button
           type="submit"

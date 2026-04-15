@@ -62,7 +62,7 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   };
 
   const isCompleted = task.status === 'completed';
-  const isUrgent = !isCompleted && waitMinutes >= 30;
+  const isDelayed = !isCompleted && waitMinutes >= 30;
 
   // Tính thời gian hoàn thành
   const completedInfo = useMemo(() => {
@@ -78,12 +78,12 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   return (
     <div className={`glass task-card fade-in ${isCompleted ? 'completed' : 'pending'}`}>
       <div className="task-header">
-        <div className={`task-timer ${isUrgent ? 'timer-urgent' : ''}`}>
+        <div className={`task-timer ${isDelayed ? 'timer-urgent' : ''}`}>
           <Clock size={14} />
           <span>{isCompleted ? (completedInfo || 'Đã xong') : `Đợi: ${waitDisplay}`}</span>
         </div>
-        <div className={`task-badge ${isCompleted ? 'badge-completed' : 'badge-pending'}`}>
-          {isCompleted ? '✓ Hoàn thành' : 'Đang chờ'}
+        <div className={`task-badge ${isCompleted ? 'badge-completed' : (task.isUrgent ? 'badge-urgent' : 'badge-pending')}`}>
+          {isCompleted ? '✓ Hoàn thành' : (task.isUrgent ? '⚡ GẤP' : 'Đang chờ')}
         </div>
       </div>
 

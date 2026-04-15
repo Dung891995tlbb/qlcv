@@ -344,6 +344,7 @@ body::after {
   letter-spacing: 0.05em;
 }
 .badge-pending { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge-urgent { background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.5); animation: blink 1s infinite alternate; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
 .badge-completed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
 
 .task-body { margin-bottom: 1rem; }
