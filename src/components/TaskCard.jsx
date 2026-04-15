@@ -18,14 +18,14 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
     if (!createdDate || !now) return 'Vừa tạo';
     const totalSec = differenceInSeconds(now, createdDate);
     if (totalSec < 0) return '00:00';
-    
+
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
-    
+
     const mStr = m.toString().padStart(2, '0');
     const sStr = s.toString().padStart(2, '0');
-    
+
     if (h > 0) return `${h}:${mStr}:${sStr}`;
     return `${mStr}:${sStr}`;
   }, [createdDate, now]);
@@ -80,7 +80,7 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
       <div className="task-header">
         <div className={`task-timer ${isDelayed ? 'timer-urgent' : ''}`}>
           <Clock size={14} />
-          <span>{isCompleted ? (completedInfo || 'Đã xong') : `Đợi: ${waitDisplay}`}</span>
+          <span>{isCompleted ? (completedInfo || 'Đã xong') : `Khách Đã Đợi: ${waitDisplay}`}</span>
         </div>
         <div className={`task-badge ${isCompleted ? 'badge-completed' : (task.isUrgent ? 'badge-urgent' : 'badge-pending')}`}>
           {isCompleted ? '✓ Hoàn thành' : (task.isUrgent ? '⚡ GẤP' : 'Đang chờ')}

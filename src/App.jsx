@@ -131,7 +131,7 @@ function App() {
 
         {/* Footer */}
         <footer className="app-footer" style={{ marginTop: '3rem', paddingTop: '1.5rem', textAlign: 'center', borderTop: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          © 2026 QLCV System · Tối ưu Mobile & Desktop
+          © 2026 QLCV System · Dũng
         </footer>
 
         {/* Toast Notifications */}
