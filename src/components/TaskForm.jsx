@@ -88,6 +88,7 @@ const TaskForm = ({ onToast }) => {
             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
             required
           ></textarea>
+        </div>
         <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
           <input
             id="isUrgent"

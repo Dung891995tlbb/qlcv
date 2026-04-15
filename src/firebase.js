@@ -15,9 +15,10 @@ const firebaseConfig = {
 // Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 
-// Khởi tạo Firestore với tính năng Offline Persistence mạnh mẽ
+// Khởi tạo Firestore với Offline Persistence + tối ưu mạng di động
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  experimentalAutoDetectLongPolling: true
 });
 
 export { db };
