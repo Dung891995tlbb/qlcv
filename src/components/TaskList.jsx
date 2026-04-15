@@ -87,6 +87,32 @@ const TaskList = ({ onToast, isAdmin }) => {
         }
       });
 
+      // Hàm helper để lấy timestamp an toàn
+      const getTime = (t) => {
+        if (!t) return Date.now();
+        return t.toMillis ? t.toMillis() : new Date(t).getTime();
+      };
+
+      // Áp dụng thuật toán sắp xếp đa tầng
+      tasksData.sort((a, b) => {
+        // Tầng 1: Đổi trạng thái -> Pending nổi lên trên, Completed chìm xuống đáy
+        if (a.status === 'pending' && b.status === 'completed') return -1;
+        if (a.status === 'completed' && b.status === 'pending') return 1;
+
+        // Tầng 2: Nếu cả hai đều Pending -> Ưu tiên đứa đợi lâu nhất (createdAt nhỏ nhất) lên đầu
+        if (a.status === 'pending' && b.status === 'pending') {
+          return getTime(a.createdAt) - getTime(b.createdAt);
+        }
+
+        // Tầng 3: Nếu cả hai đều Completed -> Ưu tiên đưa thẻ MỚI hoàn thành gần đây nhất lên trên
+        if (a.status === 'completed' && b.status === 'completed') {
+          const timeA = getTime(a.completedAt || a.createdAt);
+          const timeB = getTime(b.completedAt || b.createdAt);
+          return timeB - timeA;
+        }
+        return 0;
+      });
+
       // Kiểm tra xem có task nào MỚI được thêm vào không (chỉ check sau lần load đầu tiên)
       querySnapshot.docChanges().forEach((change) => {
         if (!isInitialLoad.current && change.type === "added" && change.doc.data().status === 'pending') {
