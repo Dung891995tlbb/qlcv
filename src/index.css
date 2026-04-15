@@ -327,6 +327,25 @@ body::after {
 .task-card.completed { opacity: 0.6; }
 .task-card.completed::before { background: var(--success); }
 
+/* KHUNG ĐỎ LỬA cho Task GẤP */
+.task-card.urgent {
+  background: rgba(239, 68, 68, 0.08);
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.15), inset 0 0 30px rgba(239, 68, 68, 0.05);
+  animation: urgentPulse 2s infinite;
+}
+.task-card.urgent::before {
+  background: #EF4444;
+  width: 5px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+}
+
+@keyframes urgentPulse {
+  0%   { box-shadow: 0 0 15px rgba(239, 68, 68, 0.1), inset 0 0 20px rgba(239, 68, 68, 0.03); }
+  50%  { box-shadow: 0 0 35px rgba(239, 68, 68, 0.25), inset 0 0 40px rgba(239, 68, 68, 0.08); }
+  100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.1), inset 0 0 20px rgba(239, 68, 68, 0.03); }
+}
+
 .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 
 .task-timer {
@@ -344,7 +363,16 @@ body::after {
   letter-spacing: 0.05em;
 }
 .badge-pending { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
-.badge-urgent { background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.5); animation: blink 1s infinite alternate; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+.badge-urgent {
+  background: #EF4444;
+  color: #fff;
+  border: 1px solid #EF4444;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  letter-spacing: 0.15em;
+  animation: blink 0.8s infinite alternate;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
 .badge-completed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
 
 .task-body { margin-bottom: 1rem; }

@@ -76,7 +76,7 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   }, [isCompleted, task.completedAt, createdDate]);
 
   return (
-    <div className={`glass task-card fade-in ${isCompleted ? 'completed' : 'pending'}`}>
+    <div className={`glass task-card fade-in ${isCompleted ? 'completed' : (task.isUrgent ? 'urgent' : 'pending')}`}>
       <div className="task-header">
         <div className={`task-timer ${isDelayed ? 'timer-urgent' : ''}`}>
           <Clock size={14} />
