@@ -1,124 +1,103 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { differenceInMinutes, differenceInSeconds } from 'date-fns';
+/**
+ * TaskCard — Individual task display with real-time timer,
+ * status badge, and action buttons.
+ */
+import React, { useState, useMemo, useCallback } from 'react';
+import { differenceInMinutes } from 'date-fns';
 import { Clock, MapPin, User, CheckCircle, Trash2 } from 'lucide-react';
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { COLLECTIONS, TASK_STATUS, THRESHOLDS } from '../lib/constants';
+import { toDate, formatDuration, formatProcessingTime } from '../lib/utils';
 
 const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const [completing, setCompleting] = useState(false);
 
-  // Lấy thời điểm tạo task
-  const createdDate = useMemo(() => {
-    if (!task.createdAt) return null;
-    return task.createdAt.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
-  }, [task.createdAt]);
-
-  // Bộ đếm thời gian (MM:SS) theo thời gian thực
-  const waitDisplay = useMemo(() => {
-    if (!createdDate || !now) return 'Vừa tạo';
-    const totalSec = differenceInSeconds(now, createdDate);
-    if (totalSec < 0) return '00:00';
-
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-
-    const mStr = m.toString().padStart(2, '0');
-    const sStr = s.toString().padStart(2, '0');
-
-    if (h > 0) return `${h}:${mStr}:${sStr}`;
-    return `${mStr}:${sStr}`;
-  }, [createdDate, now]);
-
+  // ─── Derived values ─────────────────────────────────────────
+  const createdDate = useMemo(() => toDate(task.createdAt), [task.createdAt]);
+  const isCompleted = task.status === TASK_STATUS.COMPLETED;
   const waitMinutes = createdDate ? differenceInMinutes(now, createdDate) : 0;
+  const isDelayed = !isCompleted && waitMinutes >= THRESHOLDS.DELAYED_MINUTES;
 
-  const handleComplete = async () => {
+  const timerText = useMemo(() => {
+    if (isCompleted) {
+      const completedDate = toDate(task.completedAt);
+      const time = formatProcessingTime(createdDate, completedDate);
+      return `Xử lý trong ${time || '...'}`;
+    }
+    return `Khách đã đợi: ${formatDuration(createdDate, now)}`;
+  }, [isCompleted, createdDate, task.completedAt, now]);
+
+  const statusClass = isCompleted ? 'completed' : task.isUrgent ? 'urgent' : 'pending';
+  const badgeClass = isCompleted ? 'badge-completed' : task.isUrgent ? 'badge-urgent' : 'badge-pending';
+  const badgeText = isCompleted ? '✓ Đã xong' : task.isUrgent ? '⚡ GẤP' : 'Chờ xử lý';
+
+  // ─── Handlers ───────────────────────────────────────────────
+  const handleComplete = useCallback(async () => {
     setCompleting(true);
     try {
-      const taskRef = doc(db, "tasks", task.id);
-      await updateDoc(taskRef, {
-        status: 'completed',
-        completedAt: serverTimestamp()
+      await updateDoc(doc(db, COLLECTIONS.TASKS, task.id), {
+        status: TASK_STATUS.COMPLETED,
+        completedAt: serverTimestamp(),
       });
-      onToast?.('success', `Đã hoàn thành: ${task.customerName}`);
-    } catch (error) {
-      console.error("Lỗi cập nhật trạng thái:", error);
-      onToast?.('error', 'Lỗi khi cập nhật!');
+      onToast?.('success', `Hoàn thành: ${task.customerName}`);
+    } catch (err) {
+      console.error('Complete task error:', err);
+      onToast?.('error', 'Lỗi cập nhật trạng thái!');
     } finally {
       setCompleting(false);
     }
-  };
+  }, [task.id, task.customerName, onToast]);
 
-  const handleDelete = async () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa task này?")) {
-      try {
-        await deleteDoc(doc(db, "tasks", task.id));
-        onToast?.('success', 'Đã xóa công việc');
-      } catch (error) {
-        console.error("Lỗi xóa task:", error);
-        onToast?.('error', 'Lỗi khi xóa!');
-      }
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm('Xác nhận xóa vĩnh viễn công việc này?')) return;
+    try {
+      await deleteDoc(doc(db, COLLECTIONS.TASKS, task.id));
+      onToast?.('success', 'Đã xóa dữ liệu');
+    } catch (err) {
+      console.error('Delete task error:', err);
+      onToast?.('error', 'Lỗi khi xóa!');
     }
-  };
+  }, [task.id, onToast]);
 
-  const isCompleted = task.status === 'completed';
-  const isDelayed = !isCompleted && waitMinutes >= 30;
-
-  // Tính thời gian hoàn thành
-  const completedInfo = useMemo(() => {
-    if (!isCompleted || !task.completedAt || !createdDate) return null;
-    const completedDate = task.completedAt.toDate ? task.completedAt.toDate() : new Date(task.completedAt);
-    const totalMins = differenceInMinutes(completedDate, createdDate);
-    if (totalMins < 60) return `Xử lý trong ${totalMins} phút`;
-    const h = Math.floor(totalMins / 60);
-    const m = totalMins % 60;
-    return `Xử lý trong ${h}h ${m}p`;
-  }, [isCompleted, task.completedAt, createdDate]);
-
+  // ─── Render ─────────────────────────────────────────────────
   return (
-    <div className={`glass task-card fade-in ${isCompleted ? 'completed' : (task.isUrgent ? 'urgent' : 'pending')}`}>
+    <div className={`glass task-card fade-in ${statusClass}`}>
       <div className="task-header">
         <div className={`task-timer ${isDelayed ? 'timer-urgent' : ''}`}>
           <Clock size={14} />
-          <span>{isCompleted ? (completedInfo || 'Đã xong') : `Khách Đã Đợi: ${waitDisplay}`}</span>
+          <span>{timerText}</span>
         </div>
-        <div className={`task-badge ${isCompleted ? 'badge-completed' : (task.isUrgent ? 'badge-urgent' : 'badge-pending')}`}>
-          {isCompleted ? '✓ Hoàn thành' : (task.isUrgent ? '⚡ GẤP' : 'Đang chờ')}
-        </div>
+        <div className={`task-badge ${badgeClass}`}>{badgeText}</div>
       </div>
 
       <div className="task-body">
         <div className="task-customer">
-          <User size={16} />
+          <User size={18} />
           <span>{task.customerName}</span>
         </div>
+
         {task.address && (
           <div className="task-address">
             <MapPin size={14} />
             <span>{task.address}</span>
           </div>
         )}
+
         <div className="task-content">{task.content}</div>
       </div>
 
       <div className="task-actions">
         {!isCompleted && (
-          <button
-            onClick={handleComplete}
-            disabled={completing}
-            className="btn-complete"
-          >
-            <CheckCircle size={16} />
-            {completing ? 'Đang lưu...' : 'Đã xong'}
+          <button onClick={handleComplete} disabled={completing} className="btn-complete">
+            <CheckCircle size={18} />
+            <span>{completing ? 'Đang lưu...' : 'Đã hoàn thành'}</span>
           </button>
         )}
+
         {isAdmin && (
-          <button
-            onClick={handleDelete}
-            className="btn-delete"
-            title="Xóa công việc"
-          >
-            <Trash2 size={16} />
+          <button onClick={handleDelete} className="btn-delete" title="Xóa công việc">
+            <Trash2 size={18} />
           </button>
         )}
       </div>

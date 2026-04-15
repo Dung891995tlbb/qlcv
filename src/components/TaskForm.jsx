@@ -1,117 +1,134 @@
-import React, { useState, useRef, useEffect } from 'react';
+/**
+ * TaskForm — Create new task form with urgent toggle.
+ */
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
 import { PlusCircle, Send } from 'lucide-react';
 
+const INITIAL_FORM = Object.freeze({
+  customerName: '',
+  address: '',
+  content: '',
+  isUrgent: false,
+});
+
 const TaskForm = ({ onToast }) => {
-  const [formData, setFormData] = useState({
-    customerName: '',
-    address: '',
-    content: '',
-    isUrgent: false
-  });
+  const [formData, setFormData] = useState({ ...INITIAL_FORM });
   const [loading, setLoading] = useState(false);
   const nameInputRef = useRef(null);
 
-  // Auto-focus vào ô tên khi mở trang
   useEffect(() => {
     nameInputRef.current?.focus();
   }, []);
 
-  const handleSubmit = async (e) => {
+  // Controlled field updater
+  const updateField = useCallback((field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (!formData.customerName.trim() || !formData.content.trim()) return;
+    const name = formData.customerName.trim();
+    const content = formData.content.trim();
+    if (!name || !content) return;
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "tasks"), {
-        customerName: formData.customerName.trim(),
+      await addDoc(collection(db, COLLECTIONS.TASKS), {
+        customerName: name,
         address: formData.address.trim(),
-        content: formData.content.trim(),
-        status: 'pending',
+        content,
+        status: TASK_STATUS.PENDING,
         isUrgent: formData.isUrgent,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
 
-      setFormData({ customerName: '', address: '', content: '', isUrgent: false });
+      setFormData({ ...INITIAL_FORM });
       nameInputRef.current?.focus();
-      onToast?.('success', 'Đã tạo công việc mới!');
-    } catch (error) {
-      console.error("Lỗi khi thêm task:", error);
-      onToast?.('error', 'Không thể kết nối Firebase!');
+      onToast?.('success', 'Khởi tạo công việc thành công!');
+    } catch (err) {
+      console.error('Add task error:', err);
+      onToast?.('error', 'Lỗi kết nối cơ sở dữ liệu!');
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, onToast]);
+
+  const toggleUrgent = useCallback(() => {
+    setFormData((prev) => ({ ...prev, isUrgent: !prev.isUrgent }));
+  }, []);
 
   return (
-    <div className="glass glass-glow form-card">
+    <div className="glass form-card fade-in">
       <h2 className="form-title">
-        <PlusCircle size={20} />
-        Nhập Task Mới
+        <PlusCircle size={22} className="text-gradient" />
+        <span>Giao Việc Mới</span>
       </h2>
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label" htmlFor="customerName">Tên khách hàng *</label>
+          <label className="form-label">Tên khách hàng</label>
           <input
-            id="customerName"
             ref={nameInputRef}
             type="text"
             className="form-input"
-            placeholder="VD: Anh Minh"
+            placeholder="Nhập tên khách..."
             value={formData.customerName}
-            onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+            onChange={(e) => updateField('customerName', e.target.value)}
             required
             autoComplete="off"
           />
         </div>
+
         <div className="form-group">
-          <label className="form-label" htmlFor="address">Địa chỉ</label>
+          <label className="form-label">Địa chỉ</label>
           <input
-            id="address"
             type="text"
             className="form-input"
-            placeholder="VD: 123 Nguyễn Huệ, Q1"
+            placeholder="Khu vực / Số nhà..."
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            onChange={(e) => updateField('address', e.target.value)}
             autoComplete="off"
           />
         </div>
+
         <div className="form-group">
-          <label className="form-label" htmlFor="content">Nội dung công việc *</label>
+          <label className="form-label">Yêu cầu chi tiết</label>
           <textarea
-            id="content"
             rows="3"
             className="form-textarea"
-            placeholder="Mô tả công việc cần làm..."
+            placeholder="Nội dung công việc cần xử lý..."
             value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            onChange={(e) => updateField('content', e.target.value)}
             required
-          ></textarea>
+          />
         </div>
-        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+
+        <div
+          className={`urgent-toggle ${formData.isUrgent ? 'active' : ''}`}
+          onClick={toggleUrgent}
+        >
           <input
-            id="isUrgent"
             type="checkbox"
             checked={formData.isUrgent}
-            onChange={(e) => setFormData({ ...formData, isUrgent: e.target.checked })}
-            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#EF4444' }}
+            readOnly
+            className="urgent-checkbox"
           />
-          <label htmlFor="isUrgent" style={{ color: '#EF4444', fontWeight: 800, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none' }}>
-            ĐÁNH DẤU GẤP (VIP)
-          </label>
+          <div className="urgent-label">
+            <span className="urgent-title">CHẾ ĐỘ ƯU TIÊN (GẤP)</span>
+            <span className="urgent-subtitle">Đẩy lệnh lên đầu danh sách</span>
+          </div>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-submit"
-        >
+
+        <button type="submit" disabled={loading} className="btn-submit">
           {loading ? (
-            'Đang gửi...'
+            'Đang khởi tạo...'
           ) : (
             <>
               <Send size={18} />
-              LƯU CÔNG VIỆC
+              <span>GỬI LỆNH ĐIỀU PHỐI</span>
             </>
           )}
         </button>

@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
 
-// Cấu hình Firebase lấy từ file .env
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -12,13 +11,16 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 
-// Khởi tạo Firestore với Offline Persistence + tối ưu mạng di động
+// Firestore: dùng persistentSingleTabManager với forceOwnership
+// để đảm bảo tab này LUÔN là primary tab → nhận mọi update từ server.
+// persistentMultipleTabManager dùng SharedWorker (không hỗ trợ đầy đủ trên mobile)
+// khiến tab không bao giờ trở thành primary → không nhận document mới.
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-  experimentalAutoDetectLongPolling: true
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager({ forceOwnership: true })
+  })
 });
 
 export { db };
