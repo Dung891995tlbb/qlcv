@@ -177,24 +177,7 @@ const TaskList = ({ onToast, isAdmin }) => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="search-wrapper">
-        <Search className="search-icon" size={16} />
-        <input
-          type="text"
-          placeholder="Tìm theo tên, địa chỉ, nội dung..."
-          className="search-input"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div 
-          className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-1 ${notificationsEnabled ? 'text-accent bg-accent-glow border border-accent/20 rounded-md' : 'text-text-muted'} transition-all`}
-          style={{ pointerEvents: 'none' }}
-        >
-          <BellRing size={12} />
-          {notificationsEnabled ? 'Thông báo ON' : 'Thông báo OFF'}
-        </div>
-      </div>
+
 
       {/* Filter */}
       <div className="filter-bar">
