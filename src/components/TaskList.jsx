@@ -31,7 +31,7 @@ const playNotificationSound = () => {
   }
 };
 
-const TaskList = ({ onToast }) => {
+const TaskList = ({ onToast, isAdmin }) => {
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -190,7 +190,7 @@ const TaskList = ({ onToast }) => {
           </>
         ) : filteredTasks.length > 0 ? (
           filteredTasks.map(task => (
-            <TaskCard key={task.id} task={task} onToast={onToast} now={globalNow} />
+            <TaskCard key={task.id} task={task} onToast={onToast} now={globalNow} isAdmin={isAdmin} />
           ))
         ) : (
           <div className="glass empty-state">

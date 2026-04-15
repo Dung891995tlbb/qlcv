@@ -4,7 +4,7 @@ import { Clock, MapPin, User, CheckCircle, Trash2 } from 'lucide-react';
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const TaskCard = ({ task, onToast, now }) => {
+const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const [completing, setCompleting] = useState(false);
 
   // Lấy thời điểm tạo task
@@ -112,13 +112,15 @@ const TaskCard = ({ task, onToast, now }) => {
             {completing ? 'Đang lưu...' : 'Đã xong'}
           </button>
         )}
-        <button
-          onClick={handleDelete}
-          className="btn-delete"
-          title="Xóa công việc"
-        >
-          <Trash2 size={16} />
-        </button>
+        {isAdmin && (
+          <button
+            onClick={handleDelete}
+            className="btn-delete"
+            title="Xóa công việc"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
