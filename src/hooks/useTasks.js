@@ -186,21 +186,31 @@ const useTasks = (onToast) => {
             }
           });
 
-          if (newCount > 0) {
-            log(`🔊 ${newCount} new tasks — playing notification`);
-            playNotificationSound();
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('QLCV Premium', {
-                body: `Có ${newCount} công việc mới!`,
-                icon: '/favicon.svg',
-              });
-            }
-          }
-
+          // ⚡ RENDER FIRST — always update UI before doing anything else
           log(`✅ Rendering ${tasksData.length} tasks (${tasksData.filter(t => t.status === 'pending').length} pending)`);
           setTasks(tasksData);
           setLoading(false);
           isInitialLoad.current = false;
+
+          // Notify AFTER render (best-effort, never block UI)
+          if (newCount > 0) {
+            log(`🔊 ${newCount} new tasks — playing notification`);
+            try {
+              playNotificationSound();
+            } catch (e) {
+              log('⚠️ Sound error:', e.message);
+            }
+            try {
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('QLCV Premium', {
+                  body: `Có ${newCount} công việc mới!`,
+                  icon: '/favicon.svg',
+                });
+              }
+            } catch (e) {
+              log('⚠️ Notification error:', e.message);
+            }
+          }
         },
         (error) => {
           log('❌ Firestore ERROR:', error.code, error.message);
