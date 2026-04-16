@@ -52,11 +52,15 @@ const TaskForm = ({ onToast }) => {
 
       // ─── Trigger OneSignal Push Notification ────────────────────
       try {
+        console.log("📝 [TaskForm] Preparing to trigger push notification...");
         const title = formData.isUrgent ? '🆘 LỆNH GẤP: ' + name : '📌 Công việc mới: ' + name;
         const body = `📍 ${formData.address || 'Không có địa chỉ'}\n📝 Nội dung: ${content}`;
-        sendAppNotification(title, body);
+        
+        // We await here for debugging purposes to catch errors in this block
+        const result = await sendAppNotification(title, body);
+        console.log("✅ [TaskForm] Notification successfully triggered:", result);
       } catch (e) {
-        console.error('OneSignal Trigger Error:', e);
+        console.error('❌ [TaskForm] OneSignal Trigger Error:', e);
       }
     } catch (err) {
       console.error('Add task error:', err);

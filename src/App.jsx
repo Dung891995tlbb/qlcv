@@ -101,6 +101,19 @@ function App() {
         },
       });
       console.log('🔔 OneSignal Initialized');
+      
+      // Log current subscription status
+      const isPushEnabled = await OneSignal.Notifications.permission;
+      console.log('📢 Notification Permission:', isPushEnabled ? 'GRANTED' : 'DENIED/NOT REQUESTED');
+      
+      OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+        console.log("🔄 Push Subscription Changed:", event.current);
+      });
+      
+      const sub = await OneSignal.User.PushSubscription;
+      console.log('🆔 Push Subscription ID:', sub.id || 'N/A');
+      console.log('🌐 Push Subscription Token:', sub.token || 'N/A');
+      console.log('✅ Is Subscribed:', sub.optedIn);
     });
   }, []);
 

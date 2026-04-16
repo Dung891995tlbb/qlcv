@@ -14,28 +14,42 @@ const REST_API_KEY = import.meta.env.VITE_ONESIGNAL_REST_API_KEY || "os_v2_app_i
  * @returns {Promise<any>}
  */
 export const sendAppNotification = async (title, message) => {
+  console.log("🚀 [OneSignal] Starting notification trigger...");
+  console.log("📍 [OneSignal] App ID:", APP_ID);
+  
+  const payload = {
+    app_id: APP_ID,
+    included_segments: ["All"],
+    headings: { "en": title, "vi": title },
+    contents: { "en": message, "vi": message },
+    android_accent_color: "FF4ADE80",
+    small_icon: "ic_stat_onesignal_default",
+  };
+
   try {
+    console.log("📤 [OneSignal] Sending payload:", JSON.stringify(payload, null, 2));
+    
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": `Basic ${REST_API_KEY}`
       },
-      body: JSON.stringify({
-        app_id: APP_ID,
-        included_segments: ["All"], // Send to all subscribed users
-        headings: { "en": title, "vi": title },
-        contents: { "en": message, "vi": message },
-        android_accent_color: "FF4ADE80", // Green accent for Android
-        small_icon: "ic_stat_onesignal_default",
-      })
+      body: JSON.stringify(payload)
     });
 
+    console.log("📥 [OneSignal] Response status:", response.status, response.statusText);
+    
     const data = await response.json();
-    console.log("🔔 OneSignal response:", data);
+    console.log("🔔 [OneSignal] API Response:", data);
+
+    if (data.errors) {
+      console.error("❌ [OneSignal] API returned errors:", data.errors);
+    }
+    
     return data;
   } catch (error) {
-    console.error("❌ OneSignal error:", error);
+    console.error("❌ [OneSignal] Network/Generic Error:", error);
     throw error;
   }
 };
