@@ -18,7 +18,6 @@ export default async function handler(req, res) {
   const APP_ID = process.env.ONESIGNAL_APP_ID;
   const REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
-  // Debug: show key info (safe — only prefix + length, not the full key)
   const keyInfo = REST_API_KEY
     ? `${REST_API_KEY.substring(0, 12)}... (length: ${REST_API_KEY.length})`
     : 'NOT SET';
@@ -52,18 +51,22 @@ export default async function handler(req, res) {
     small_icon: 'ic_stat_onesignal_default',
   };
 
-  // ─── Determine auth header format ─────────────────────────────
+  // ─── Determine API version & auth based on key type ───────────
   const isV2Key = REST_API_KEY.startsWith('os_v2_');
+  const apiUrl = isV2Key
+    ? 'https://api.onesignal.com/notifications'          // v2 API
+    : 'https://onesignal.com/api/v1/notifications';      // v1 API
   const authHeader = isV2Key
     ? `Key ${REST_API_KEY}`
     : `Basic ${REST_API_KEY}`;
-  console.log(`[notify] Auth format: ${isV2Key ? 'Key (v2)' : 'Basic (v1)'}`);
+
+  console.log(`[notify] Using ${isV2Key ? 'v2' : 'v1'} API: ${apiUrl}`);
 
   // ─── Send to OneSignal ────────────────────────────────────────
   try {
     console.log(`[notify] Sending: "${title}" -> All subscribers`);
 
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
@@ -81,7 +84,9 @@ export default async function handler(req, res) {
         detail: data.errors || data,
         status: response.status,
         debug: {
-          authFormat: isV2Key ? 'Key (v2)' : 'Basic (v1)',
+          apiVersion: isV2Key ? 'v2' : 'v1',
+          apiUrl: apiUrl,
+          authFormat: isV2Key ? 'Key' : 'Basic',
           keyPrefix: REST_API_KEY.substring(0, 12),
           keyLength: REST_API_KEY.length,
         },
