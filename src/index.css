@@ -505,6 +505,7 @@ body::after {
   border-radius: var(--radius-sm); padding: 1rem;
   font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary);
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .task-actions { display: flex; gap: 0.5rem; }
@@ -751,7 +752,7 @@ body::after {
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .app-container { padding: 1rem; }
-  .app-header { padding: 1rem 0; margin-bottom: 1.5rem; }
+  .app-header { padding: 1rem 0; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
   .stats-bar { gap: 0.5rem; }
   .stat-item { padding: 1rem 0.75rem; }
   .stat-number { font-size: 1.4rem; }
@@ -773,6 +774,8 @@ body::after {
 }
 
 @media (max-width: 480px) {
+  .app-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .header-right { width: 100%; justify-content: flex-end; }
   .stats-bar { grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; }
   .stat-item { padding: 0.85rem 0.5rem; border-radius: var(--radius-sm); }
   .stat-number { font-size: 1.2rem; }

@@ -2,14 +2,12 @@
  * AppHeader — Shared page header with icon, title, navigation, and sync status.
  * Supports variant prop for different icon backgrounds per view.
  */
-import React, { useState } from 'react';
+import React from 'react';
 import SyncBadge from './SyncBadge';
-import { Bell, Send } from 'lucide-react';
-import { promptForPushNotifications, sendAppNotification } from '../lib/onesignal';
+import { Bell } from 'lucide-react';
+import { promptForPushNotifications } from '../lib/onesignal';
 
 const AppHeader = ({ icon, title, syncLabel, variant, children }) => {
-  const [testing, setTesting] = useState(false);
-
   const handleBellClick = async () => {
     const log = window.log || console.log;
     log('─── 🔔 BELL BUTTON PRESSED ───');
@@ -32,32 +30,6 @@ const AppHeader = ({ icon, title, syncLabel, variant, children }) => {
     }
   };
 
-  const handleTestNotification = async () => {
-    const log = window.log || console.log;
-    setTesting(true);
-    log('─── 🧪 TEST NOTIFICATION START ───');
-    
-    try {
-      const result = await sendAppNotification(
-        'QLCV · Thử nghiệm',
-        'Hệ thống thông báo hoạt động bình thường ✓',
-        { url: '/' }
-      );
-      log('🧪 [Test] Result:', JSON.stringify(result));
-      
-      if (result?.success) {
-        log(`🧪 [Test] ✅ Thành công! Gửi đến ${result.recipients} thiết bị`);
-      } else {
-        log(`🧪 [Test] ❌ Thất bại:`, JSON.stringify(result));
-      }
-    } catch (e) {
-      log(`🧪 [Test] ❌ Error: ${e.message}`);
-    } finally {
-      setTesting(false);
-      log('─── 🧪 TEST NOTIFICATION END ───');
-    }
-  };
-
   return (
     <header className="app-header">
       <div className="header-left">
@@ -69,17 +41,7 @@ const AppHeader = ({ icon, title, syncLabel, variant, children }) => {
           {children && <nav className="nav-links">{children}</nav>}
         </div>
       </div>
-      
       <div className="header-right">
-        <button 
-          className="btn-icon bell-btn" 
-          onClick={handleTestNotification}
-          disabled={testing}
-          title="Gửi thông báo thử nghiệm"
-          style={testing ? { opacity: 0.5 } : {}}
-        >
-          <Send size={18} />
-        </button>
         <button 
           className="btn-icon bell-btn" 
           onClick={handleBellClick}

@@ -5,11 +5,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { differenceInSeconds, differenceInMinutes, format, startOfDay, endOfDay, subDays, addDays, subMonths } from 'date-fns';
+import { differenceInSeconds, format, startOfDay, endOfDay, subDays, addDays, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
 import { toDate, formatProcessingTime } from '../lib/utils';
-import { BarChart, Clock, Zap, Target, ChevronLeft, ChevronRight, Calendar, Trash2 } from 'lucide-react';
+import { BarChart, Clock, Target, ChevronLeft, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 
 // ─── Auto-cleanup: delete tasks older than 1 month ──────────────
 const cleanupOldTasks = async () => {

@@ -95,21 +95,7 @@ function App() {
     log(`🔑 VITE_ONESIGNAL_APP_ID: ${import.meta.env.VITE_ONESIGNAL_APP_ID ? '✅ SET' : '❌ MISSING'}`);
     log(`📜 OneSignal SDK: ${typeof window.OneSignalDeferred !== 'undefined' || typeof window.OneSignal !== 'undefined' ? '✅ LOADED' : '❌ NOT LOADED'}`);
     
-    // Quick health check on the API endpoint
-    fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-      .then(r => r.json())
-      .then(data => {
-        if (data.error === 'Bad request') {
-          log('🌐 [API] /api/notify: ✅ REACHABLE (responded correctly)');
-        } else if (data.error === 'Server configuration error') {
-          log('🌐 [API] /api/notify: ⚠️ Reachable but ENV VARS MISSING on Vercel');
-        } else {
-          log('🌐 [API] /api/notify: ⚠️ Unexpected response:', JSON.stringify(data));
-        }
-      })
-      .catch(e => {
-        log(`🌐 [API] /api/notify: ❌ UNREACHABLE (${e.message})`);
-      });
+    log('📜 App Initialization Complete');
     log('═══════════════════════════════════════');
   }, []);
 
