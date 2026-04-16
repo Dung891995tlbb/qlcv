@@ -1,10 +1,10 @@
 /**
  * TaskCard — Individual task display with real-time timer,
- * status badge, and action buttons.
+ * status badge, action buttons, and inline edit.
  */
 import React, { useState, useMemo, useCallback } from 'react';
 import { differenceInMinutes } from 'date-fns';
-import { Clock, MapPin, User, CheckCircle, Trash2 } from 'lucide-react';
+import { Clock, MapPin, User, CheckCircle, Trash2, Pencil, X, Save } from 'lucide-react';
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COLLECTIONS, TASK_STATUS, THRESHOLDS } from '../lib/constants';
@@ -13,6 +13,9 @@ import { sendAppNotification } from '../lib/onesignal';
 
 const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const [completing, setCompleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [saving, setSaving] = useState(false);
 
   // ─── Derived values ─────────────────────────────────────────
   const createdDate = useMemo(() => toDate(task.createdAt), [task.createdAt]);
@@ -33,7 +36,47 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const badgeClass = isCompleted ? 'badge-completed' : task.isUrgent ? 'badge-urgent' : 'badge-pending';
   const badgeText = isCompleted ? '✓ Đã xong' : task.isUrgent ? '⚡ GẤP' : 'Chờ xử lý';
 
-  // ─── Handlers ───────────────────────────────────────────────
+  // ─── Edit Handlers ──────────────────────────────────────────
+  const startEdit = useCallback(() => {
+    setEditData({
+      customerName: task.customerName,
+      address: task.address || '',
+      content: task.content,
+      isUrgent: task.isUrgent || false,
+    });
+    setEditing(true);
+  }, [task]);
+
+  const cancelEdit = useCallback(() => {
+    setEditing(false);
+    setEditData({});
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editData.customerName?.trim() || !editData.content?.trim()) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, COLLECTIONS.TASKS, task.id), {
+        customerName: editData.customerName.trim(),
+        address: editData.address.trim(),
+        content: editData.content.trim(),
+        isUrgent: editData.isUrgent,
+      });
+      onToast?.('success', 'Đã cập nhật công việc');
+      setEditing(false);
+    } catch (err) {
+      console.error('Edit task error:', err);
+      onToast?.('error', 'Lỗi cập nhật!');
+    } finally {
+      setSaving(false);
+    }
+  }, [task.id, editData, onToast]);
+
+  const updateEditField = useCallback((field, value) => {
+    setEditData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  // ─── Complete Handler ───────────────────────────────────────
   const handleComplete = useCallback(async () => {
     setCompleting(true);
     try {
@@ -71,7 +114,66 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
     }
   }, [task.id, onToast]);
 
-  // ─── Render ─────────────────────────────────────────────────
+  // ─── Render: Edit Mode ──────────────────────────────────────
+  if (editing) {
+    return (
+      <div className={`glass task-card fade-in editing`}>
+        <div className="task-header">
+          <div className="task-badge badge-editing">✏️ Chỉnh sửa</div>
+          <button className="btn-icon btn-cancel-edit" onClick={cancelEdit} title="Hủy">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="edit-form">
+          <div className="edit-group">
+            <label className="form-label">Tên khách hàng</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editData.customerName}
+              onChange={(e) => updateEditField('customerName', e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="edit-group">
+            <label className="form-label">Địa chỉ</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editData.address}
+              onChange={(e) => updateEditField('address', e.target.value)}
+            />
+          </div>
+          <div className="edit-group">
+            <label className="form-label">Nội dung</label>
+            <textarea
+              rows="2"
+              className="form-textarea"
+              value={editData.content}
+              onChange={(e) => updateEditField('content', e.target.value)}
+            />
+          </div>
+          <div
+            className={`urgent-toggle compact ${editData.isUrgent ? 'active' : ''}`}
+            onClick={() => updateEditField('isUrgent', !editData.isUrgent)}
+          >
+            <input type="checkbox" checked={editData.isUrgent} readOnly className="urgent-checkbox" />
+            <span className="urgent-title">GẤP</span>
+          </div>
+        </div>
+
+        <div className="task-actions">
+          <button onClick={saveEdit} disabled={saving} className="btn-complete">
+            <Save size={18} />
+            <span>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render: Normal Mode ────────────────────────────────────
   return (
     <div className={`glass task-card fade-in ${statusClass}`}>
       <div className="task-header">
@@ -107,9 +209,14 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
         )}
 
         {isAdmin && (
-          <button onClick={handleDelete} className="btn-delete" title="Xóa công việc">
-            <Trash2 size={18} />
-          </button>
+          <>
+            <button onClick={startEdit} className="btn-edit" title="Chỉnh sửa">
+              <Pencil size={18} />
+            </button>
+            <button onClick={handleDelete} className="btn-delete" title="Xóa công việc">
+              <Trash2 size={18} />
+            </button>
+          </>
         )}
       </div>
     </div>

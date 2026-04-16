@@ -1,108 +1,263 @@
 /**
- * Analytics — All-time performance dashboard.
+ * Analytics — Performance dashboard with date-based history,
+ * task detail table, and auto-cleanup of old data (>1 month).
  */
-import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { differenceInSeconds } from 'date-fns';
+import { differenceInSeconds, differenceInMinutes, format, startOfDay, endOfDay, subDays, addDays, subMonths } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
-import { toDate } from '../lib/utils';
-import { BarChart, Clock, Zap, Target } from 'lucide-react';
+import { toDate, formatProcessingTime } from '../lib/utils';
+import { BarChart, Clock, Zap, Target, ChevronLeft, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 
+// ─── Auto-cleanup: delete tasks older than 1 month ──────────────
+const cleanupOldTasks = async () => {
+  const log = window.log || console.log;
+  try {
+    const cutoff = subMonths(new Date(), 1);
+    const cutoffTimestamp = Timestamp.fromDate(cutoff);
+
+    const q = query(
+      collection(db, COLLECTIONS.TASKS),
+      where('createdAt', '<', cutoffTimestamp)
+    );
+
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      log('🧹 [Cleanup] No tasks older than 1 month');
+      return;
+    }
+
+    log(`🧹 [Cleanup] Found ${snapshot.size} tasks older than 1 month — deleting...`);
+    const deletePromises = [];
+    snapshot.forEach((docSnap) => {
+      deletePromises.push(deleteDoc(doc(db, COLLECTIONS.TASKS, docSnap.id)));
+    });
+    await Promise.all(deletePromises);
+    log(`🧹 [Cleanup] Deleted ${snapshot.size} old tasks ✅`);
+  } catch (err) {
+    log(`🧹 [Cleanup] Error: ${err.message}`);
+  }
+};
+
+// ─── Stat cards config ──────────────────────────────────────────
 const STAT_CARDS = [
-  { key: 'total',      label: 'Tổng luồng việc', colorClass: 'accent',  icon: Target },
-  { key: 'completed',  label: 'Đã hoàn tất',     colorClass: 'success', icon: null },
-  { key: 'avgWaitMins',label: 'Trung bình (m)',   colorClass: 'warning', icon: Clock },
-  { key: 'fastestMins',label: 'Kỷ lục (m)',       colorClass: 'info',    icon: Zap },
+  { key: 'total',       label: 'Tổng task',    colorClass: 'accent',  icon: Target },
+  { key: 'completed',   label: 'Đã xong',      colorClass: 'success', icon: null },
+  { key: 'pending',     label: 'Đang chờ',      colorClass: 'warning', icon: null },
+  { key: 'avgWaitMins', label: 'TB xử lý (p)',  colorClass: 'info',    icon: Clock },
 ];
 
 const Analytics = () => {
-  const [stats, setStats] = useState({
-    total: 0, completed: 0, pending: 0,
-    avgWaitMins: 0, fastestMins: 0,
-  });
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ─── Run cleanup once on mount ────────────────────────────────
   useEffect(() => {
-    const q = query(collection(db, COLLECTIONS.TASKS));
+    cleanupOldTasks();
+  }, []);
+
+  // ─── Load tasks for selected date ─────────────────────────────
+  useEffect(() => {
+    setLoading(true);
+    const dayStart = Timestamp.fromDate(startOfDay(selectedDate));
+    const dayEnd = Timestamp.fromDate(endOfDay(selectedDate));
+
+    const q = query(
+      collection(db, COLLECTIONS.TASKS),
+      where('createdAt', '>=', dayStart),
+      where('createdAt', '<=', dayEnd),
+      orderBy('createdAt', 'desc')
+    );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let total = 0, completed = 0, pending = 0;
-      let totalWaitSecs = 0, fastestSecs = Infinity;
-
+      const data = [];
       snapshot.forEach((docSnap) => {
-        total++;
-        const data = docSnap.data();
-
-        if (data.status === TASK_STATUS.COMPLETED) {
-          completed++;
-          const created = toDate(data.createdAt);
-          const done = toDate(data.completedAt);
-          if (created && done) {
-            const diff = differenceInSeconds(done, created);
-            if (diff >= 0) {
-              totalWaitSecs += diff;
-              if (diff < fastestSecs) fastestSecs = diff;
-            }
-          }
-        } else {
-          pending++;
-        }
+        data.push({ id: docSnap.id, ...docSnap.data() });
       });
-
-      setStats({
-        total, completed, pending,
-        avgWaitMins: completed > 0 ? Math.round((totalWaitSecs / completed) / 60) : 0,
-        fastestMins: fastestSecs === Infinity ? 0 : Math.round(fastestSecs / 60),
-      });
+      setTasks(data);
       setLoading(false);
     });
 
     return () => unsubscribe();
+  }, [selectedDate]);
+
+  // ─── Date navigation ──────────────────────────────────────────
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const minDate = useMemo(() => subMonths(today, 1), [today]);
+  const isToday = useMemo(() => startOfDay(selectedDate).getTime() === today.getTime(), [selectedDate, today]);
+  const isMinDate = useMemo(() => startOfDay(selectedDate).getTime() <= minDate.getTime(), [selectedDate, minDate]);
+
+  const goBack = useCallback(() => {
+    if (!isMinDate) setSelectedDate(prev => subDays(prev, 1));
+  }, [isMinDate]);
+
+  const goForward = useCallback(() => {
+    if (!isToday) setSelectedDate(prev => addDays(prev, 1));
+  }, [isToday]);
+
+  const goToday = useCallback(() => {
+    setSelectedDate(new Date());
   }, []);
 
-  const completionRate = useMemo(
-    () => (stats.completed / (stats.total || 1) * 100).toFixed(1),
-    [stats.completed, stats.total]
-  );
+  // ─── Computed stats ───────────────────────────────────────────
+  const stats = useMemo(() => {
+    let total = tasks.length;
+    let completed = 0, pending = 0;
+    let totalWaitSecs = 0, fastestSecs = Infinity;
 
-  if (loading) {
-    return (
-      <div className="empty-state">
-        <div className="skeleton skeleton-box" style={{ height: '300px', borderRadius: 'var(--radius-lg)' }} />
-      </div>
-    );
-  }
+    tasks.forEach((task) => {
+      if (task.status === TASK_STATUS.COMPLETED) {
+        completed++;
+        const created = toDate(task.createdAt);
+        const done = toDate(task.completedAt);
+        if (created && done) {
+          const diff = differenceInSeconds(done, created);
+          if (diff >= 0) {
+            totalWaitSecs += diff;
+            if (diff < fastestSecs) fastestSecs = diff;
+          }
+        }
+      } else {
+        pending++;
+      }
+    });
 
+    return {
+      total, completed, pending,
+      avgWaitMins: completed > 0 ? Math.round((totalWaitSecs / completed) / 60) : 0,
+      fastestMins: fastestSecs === Infinity ? 0 : Math.round(fastestSecs / 60),
+    };
+  }, [tasks]);
+
+  // ─── Format date display ──────────────────────────────────────
+  const dateDisplay = useMemo(() => {
+    if (isToday) return 'Hôm nay';
+    return format(selectedDate, "EEEE, dd/MM/yyyy", { locale: vi });
+  }, [selectedDate, isToday]);
+
+  // ─── Render ───────────────────────────────────────────────────
   return (
     <div className="fade-in">
       <h2 className="section-title">
         <BarChart size={24} className="text-gradient" />
-        HIỆU SUẤT HỆ THỐNG
+        LỊCH SỬ & THỐNG KÊ
       </h2>
 
+      {/* Date Picker */}
+      <div className="glass date-picker-card">
+        <button
+          className="btn-icon date-nav-btn"
+          onClick={goBack}
+          disabled={isMinDate}
+          title="Ngày trước"
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <div className="date-display" onClick={goToday}>
+          <Calendar size={18} />
+          <span className="date-text">{dateDisplay}</span>
+          <span className="date-sub">{format(selectedDate, 'dd/MM/yyyy')}</span>
+        </div>
+
+        <button
+          className="btn-icon date-nav-btn"
+          onClick={goForward}
+          disabled={isToday}
+          title="Ngày sau"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* Stats Cards */}
       <div className="analytics-grid">
         {STAT_CARDS.map(({ key, label, colorClass, icon: Icon }) => (
           <div key={key} className="stat-item glass analytics-card">
             <div className={`stat-number ${colorClass}`}>{stats[key]}</div>
             <div className="stat-label">
               {Icon && <Icon size={16} />}
-              {key === 'completed' && '✓ '}{label}
+              {label}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="glass insight-card">
-        <h3>💡 Phân tích Hiệu suất</h3>
-        <div className="insight-text">
-          Trong tổng số <span className="insight-highlight">{stats.total}</span> yêu cầu đã phát sinh,{' '}
-          đội ngũ đã giải quyết thành công <span className="insight-highlight">{stats.completed}</span> việc.{' '}
-          Tỷ lệ hoàn thành đạt <span className="insight-highlight">{completionRate}%</span>.
-          <br /><br />
-          Thời gian xử lý trung bình là <span className="insight-highlight">{stats.avgWaitMins} phút</span> tính từ lúc khởi tạo lệnh.{' '}
-          Kỷ lục nhanh nhất hiện tại là <span className="insight-highlight">{stats.fastestMins} phút</span>.
-        </div>
+      {/* Task History Table */}
+      <div className="glass history-card">
+        <h3 className="history-title">
+          📋 Chi tiết công việc
+          <span className="history-count">{tasks.length} task</span>
+        </h3>
+
+        {loading ? (
+          <div className="skeleton skeleton-box" style={{ height: '200px', borderRadius: 'var(--radius-md)' }} />
+        ) : tasks.length === 0 ? (
+          <div className="history-empty">
+            Không có công việc nào trong ngày này
+          </div>
+        ) : (
+          <div className="history-table-wrap">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>Trạng thái</th>
+                  <th>Khách hàng</th>
+                  <th>Địa chỉ</th>
+                  <th>Nội dung</th>
+                  <th>Giờ tạo</th>
+                  <th>Xử lý</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task) => {
+                  const created = toDate(task.createdAt);
+                  const completed = toDate(task.completedAt);
+                  const isDone = task.status === TASK_STATUS.COMPLETED;
+                  const processTime = isDone ? formatProcessingTime(created, completed) : null;
+
+                  return (
+                    <tr key={task.id} className={isDone ? 'row-completed' : task.isUrgent ? 'row-urgent' : ''}>
+                      <td>
+                        <span className={`table-badge ${isDone ? 'tb-done' : task.isUrgent ? 'tb-urgent' : 'tb-pending'}`}>
+                          {isDone ? '✓' : task.isUrgent ? '⚡' : '○'}
+                        </span>
+                      </td>
+                      <td className="td-name">{task.customerName}</td>
+                      <td className="td-addr">{task.address || '—'}</td>
+                      <td className="td-content">{task.content}</td>
+                      <td className="td-time">{created ? format(created, 'HH:mm') : '—'}</td>
+                      <td className="td-process">{processTime || (isDone ? '—' : '...')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Summary Insight */}
+      {stats.total > 0 && (
+        <div className="glass insight-card">
+          <h3>💡 Tổng kết ngày</h3>
+          <div className="insight-text">
+            Tổng <span className="insight-highlight">{stats.total}</span> yêu cầu,{' '}
+            hoàn thành <span className="insight-highlight">{stats.completed}</span>{' '}
+            ({stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(0) : 0}%).
+            {stats.pending > 0 && <> Còn <span className="insight-highlight">{stats.pending}</span> chưa xong.</>}
+            {stats.avgWaitMins > 0 && (
+              <> Thời gian xử lý trung bình <span className="insight-highlight">{stats.avgWaitMins} phút</span>.</>
+            )}
+            {stats.fastestMins > 0 && (
+              <> Nhanh nhất <span className="insight-highlight">{stats.fastestMins} phút</span>.</>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
