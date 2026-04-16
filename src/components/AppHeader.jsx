@@ -4,6 +4,8 @@
  */
 import React from 'react';
 import SyncBadge from './SyncBadge';
+import { Bell } from 'lucide-react';
+import { promptForPushNotifications } from '../lib/onesignal';
 
 const AppHeader = ({ icon, title, syncLabel, variant, children }) => (
   <header className="app-header">
@@ -16,7 +18,17 @@ const AppHeader = ({ icon, title, syncLabel, variant, children }) => (
         {children && <nav className="nav-links">{children}</nav>}
       </div>
     </div>
-    <SyncBadge label={syncLabel} />
+    
+    <div className="header-right">
+      <button 
+        className="btn-icon bell-btn" 
+        onClick={promptForPushNotifications}
+        title="Bật thông báo"
+      >
+        <Bell size={20} />
+      </button>
+      <SyncBadge label={syncLabel} />
+    </div>
   </header>
 );
 

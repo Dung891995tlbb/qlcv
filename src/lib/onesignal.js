@@ -39,3 +39,14 @@ export const sendAppNotification = async (title, message) => {
     throw error;
   }
 };
+
+/**
+ * Trigger the OneSignal native permission prompt.
+ */
+export const promptForPushNotifications = () => {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    console.log("🔔 Requesting push permission...");
+    await OneSignal.Notifications.requestPermission();
+  });
+};

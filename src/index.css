@@ -141,6 +141,33 @@ body::after {
 }
 
 .header-left { display: flex; align-items: center; gap: 1rem; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+
+.btn-icon {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.btn-icon:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.btn-icon:active { transform: translateY(0); }
+
+.bell-btn:hover {
+  color: var(--warning);
+  box-shadow: 0 0 15px rgba(252, 211, 77, 0.15);
+}
 
 .header-icon {
   width: 48px; height: 48px;

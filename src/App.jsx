@@ -87,13 +87,17 @@ function App() {
 
   // ─── OneSignal Initialization ─────────────────────────────────
   useEffect(() => {
+    const APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || "433cb78d-2f07-43e7-869b-2bbc90800ba4";
+    
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function (OneSignal) {
+      if (OneSignal.initialized) return; // Prevent double init
+      
       await OneSignal.init({
-        appId: "433cb78d-2f07-43e7-869b-2bbc90800ba4",
-        safari_web_id: "web.onesignal.auto.109e320d-7f41-4560-9bc7-60e0a359b6c1", // Optional
+        appId: APP_ID,
+        allowLocalhostAsHTTP: true, // Useful for development testing
         notifyButton: {
-          enable: false, // We'll manage opt-in via prompt or settings later
+          enable: false, // We use the custom Bell button in AppHeader instead
         },
       });
       console.log('🔔 OneSignal Initialized');
