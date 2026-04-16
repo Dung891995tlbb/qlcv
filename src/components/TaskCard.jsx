@@ -45,9 +45,10 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
 
       // ─── Push noti khi hoàn thành task ───────────────────────
       try {
-        const title = '✅ Đã hoàn thành: ' + task.customerName;
-        const body = `📍 ${task.address || 'Không có địa chỉ'}\n📝 ${task.content}`;
-        await sendAppNotification(title, body);
+        const addr = task.address ? ` · ${task.address}` : '';
+        const title = 'QLCV · Hoàn thành ✓';
+        const body = `${task.customerName}${addr} — ${task.content}`;
+        await sendAppNotification(title, body, { url: '/' });
       } catch (notiErr) {
         (window.log || console.error)('❌ [TaskCard] Noti error:', notiErr.message);
       }

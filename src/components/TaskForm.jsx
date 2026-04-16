@@ -54,10 +54,11 @@ const TaskForm = ({ onToast }) => {
       try {
         const log = window.log || console.log;
         log("📝 [TaskForm] Preparing push notification...");
-        const title = formData.isUrgent ? '🆘 LỆNH GẤP: ' + name : '📌 Công việc mới: ' + name;
-        const body = `📍 ${formData.address || 'Không có địa chỉ'}\n📝 Nội dung: ${content}`;
+        const addr = formData.address ? ` · ${formData.address}` : '';
+        const title = formData.isUrgent ? '🚨 QLCV · Lệnh GẤP' : 'QLCV · Công việc mới';
+        const body = `${name}${addr} — ${content}`;
         
-        const result = await sendAppNotification(title, body);
+        const result = await sendAppNotification(title, body, { urgent: formData.isUrgent, url: '/admin' });
         log("✅ [TaskForm] Notification sent:", result);
       } catch (e) {
         (window.log || console.error)('❌ [TaskForm] OneSignal Error:', e);

@@ -39,8 +39,9 @@ const AppHeader = ({ icon, title, syncLabel, variant, children }) => {
     
     try {
       const result = await sendAppNotification(
-        '🧪 Test Notification',
-        'Đây là thông báo thử nghiệm từ QLCV!'
+        'QLCV · Thử nghiệm',
+        'Hệ thống thông báo hoạt động bình thường ✓',
+        { url: '/' }
       );
       log('🧪 [Test] Result:', JSON.stringify(result));
       

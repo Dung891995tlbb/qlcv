@@ -6,15 +6,22 @@
 
 /**
  * Send a push notification to all subscribed users via server proxy.
- * @param {string} title - Notification title
- * @param {string} message - Notification message body
+ * @param {string} title - Notification title (app name)
+ * @param {string} message - Notification message body (task details)
+ * @param {Object} [options] - Additional options
+ * @param {boolean} [options.urgent] - High priority (bypass DND, vibrate)
+ * @param {string} [options.url] - URL to open when clicking notification
  * @returns {Promise<any>}
  */
-export const sendAppNotification = async (title, message) => {
+export const sendAppNotification = async (title, message, options = {}) => {
   const log = window.log || console.log;
   log("🚀 [Noti] Preparing push notification...");
   log(`   📌 Title: "${title}"`);
   log(`   📝 Body: "${message}"`);
+
+  const payload = { title, message };
+  if (options.urgent) payload.urgent = true;
+  if (options.url) payload.url = options.url;
 
   try {
     log("📤 [Noti] Sending to /api/notify...");
@@ -22,7 +29,7 @@ export const sendAppNotification = async (title, message) => {
     const response = await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, message }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -38,7 +45,7 @@ export const sendAppNotification = async (title, message) => {
         const retry = await fetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, message }),
+          body: JSON.stringify(payload),
         });
         const retryData = await retry.json();
 
@@ -47,14 +54,14 @@ export const sendAppNotification = async (title, message) => {
           return retryData;
         }
 
-        log(`✅ [Noti] Retry success — id: ${retryData.id}, recipients: ${retryData.recipients}`);
+        log(`✅ [Noti] Retry success — id: ${retryData.id}`);
         return retryData;
       }
 
       return data;
     }
 
-    log(`✅ [Noti] Sent! id: ${data.id}, recipients: ${data.recipients}`);
+    log(`✅ [Noti] Sent! id: ${data.id}`);
     return data;
   } catch (error) {
     log(`❌ [Noti] Network Error: ${error.message}`);
@@ -67,12 +74,12 @@ export const sendAppNotification = async (title, message) => {
       const retry = await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, message }),
+        body: JSON.stringify(payload),
       });
       const retryData = await retry.json();
 
       if (retry.ok) {
-        log(`✅ [Noti] Retry success — id: ${retryData.id}, recipients: ${retryData.recipients}`);
+        log(`✅ [Noti] Retry success — id: ${retryData.id}`);
         return retryData;
       }
 
