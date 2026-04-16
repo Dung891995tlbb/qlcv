@@ -51,16 +51,16 @@ export default async function handler(req, res) {
     small_icon: 'ic_stat_onesignal_default',
   };
 
-  // ─── Determine API version & auth based on key type ───────────
+  // ─── Determine API version based on key type ───────────────────
+  // OneSignal v2 app keys (os_v2_app_*) use v2 API + Basic auth
   const isV2Key = REST_API_KEY.startsWith('os_v2_');
   const apiUrl = isV2Key
-    ? 'https://api.onesignal.com/notifications'          // v2 API
-    : 'https://onesignal.com/api/v1/notifications';      // v1 API
-  const authHeader = isV2Key
-    ? `Key ${REST_API_KEY}`
-    : `Basic ${REST_API_KEY}`;
+    ? 'https://api.onesignal.com/notifications'
+    : 'https://onesignal.com/api/v1/notifications';
+  // App-level keys always use "Basic", org-level keys use "Key"
+  const authHeader = `Basic ${REST_API_KEY}`;
 
-  console.log(`[notify] Using ${isV2Key ? 'v2' : 'v1'} API: ${apiUrl}`);
+  console.log(`[notify] Using ${isV2Key ? 'v2' : 'v1'} API + Basic auth`);
 
   // ─── Send to OneSignal ────────────────────────────────────────
   try {
