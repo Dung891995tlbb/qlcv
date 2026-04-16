@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
 import { PlusCircle, Send } from 'lucide-react';
+import { sendAppNotification } from '../lib/onesignal';
 
 const INITIAL_FORM = Object.freeze({
   customerName: '',
@@ -48,6 +49,15 @@ const TaskForm = ({ onToast }) => {
       setFormData({ ...INITIAL_FORM });
       nameInputRef.current?.focus();
       onToast?.('success', 'Khởi tạo công việc thành công!');
+
+      // ─── Trigger OneSignal Push Notification ────────────────────
+      try {
+        const title = formData.isUrgent ? '🆘 LỆNH GẤP: ' + name : '📌 Công việc mới: ' + name;
+        const body = `📍 ${formData.address || 'Không có địa chỉ'}\n📝 Nội dung: ${content}`;
+        sendAppNotification(title, body);
+      } catch (e) {
+        console.error('OneSignal Trigger Error:', e);
+      }
     } catch (err) {
       console.error('Add task error:', err);
       onToast?.('error', 'Lỗi kết nối cơ sở dữ liệu!');

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
@@ -84,6 +84,21 @@ const ReportView = () => (
 
 function App() {
   const [toasts, setToasts] = useState([]);
+
+  // ─── OneSignal Initialization ─────────────────────────────────
+  useEffect(() => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.init({
+        appId: "433cb78d-2f07-43e7-869b-2bbc90800ba4",
+        safari_web_id: "web.onesignal.auto.109e320d-7f41-4560-9bc7-60e0a359b6c1", // Optional
+        notifyButton: {
+          enable: false, // We'll manage opt-in via prompt or settings later
+        },
+      });
+      console.log('🔔 OneSignal Initialized');
+    });
+  }, []);
 
   const addToast = useCallback((type, message) => {
     const id = Date.now();

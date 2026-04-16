@@ -88,12 +88,9 @@ const useTasks = (onToast) => {
   const isInitialLoad = useRef(true);
   const attachCount = useRef(0);
 
-  // Request notification permission on mount
+  // Analytics/Logging on mount
   useEffect(() => {
     log('🚀 useTasks mounted');
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then((p) => log('🔔 Notification permission:', p));
-    }
   }, []);
 
   // Stable onToast ref to avoid re-subscribing
@@ -194,21 +191,11 @@ const useTasks = (onToast) => {
 
           // Notify AFTER render (best-effort, never block UI)
           if (newCount > 0) {
-            log(`🔊 ${newCount} new tasks — playing notification`);
+            log(`🔊 ${newCount} new tasks — playing sound`);
             try {
               playNotificationSound();
             } catch (e) {
               log('⚠️ Sound error:', e.message);
-            }
-            try {
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('QLCV Premium', {
-                  body: `Có ${newCount} công việc mới!`,
-                  icon: '/favicon.svg',
-                });
-              }
-            } catch (e) {
-              log('⚠️ Notification error:', e.message);
             }
           }
         },
