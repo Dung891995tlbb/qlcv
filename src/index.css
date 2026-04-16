@@ -774,13 +774,15 @@ body::after {
 }
 
 @media (max-width: 480px) {
-  .app-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .header-right { width: 100%; justify-content: flex-end; }
+  .app-header { flex-wrap: nowrap; gap: 0.5rem; }
+  .header-left { gap: 0.5rem; }
+  .header-icon { width: 36px; height: 36px; }
+  .header-title { font-size: 1.1rem; }
+  .header-right { width: auto; gap: 0.5rem; justify-content: flex-end; }
   .stats-bar { grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; }
   .stat-item { padding: 0.85rem 0.5rem; border-radius: var(--radius-sm); }
   .stat-number { font-size: 1.2rem; }
   .stat-label { font-size: 0.55rem; letter-spacing: 0.06em; }
-  .task-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .analytics-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .analytics-card .stat-number { font-size: 1.5rem; }
   .td-content { max-width: 120px; }
