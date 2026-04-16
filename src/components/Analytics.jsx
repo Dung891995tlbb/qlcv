@@ -210,6 +210,7 @@ const Analytics = () => {
                   <th>Nội dung</th>
                   <th>Giờ tạo</th>
                   <th>Xử lý</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -218,6 +219,15 @@ const Analytics = () => {
                   const completed = toDate(task.completedAt);
                   const isDone = task.status === TASK_STATUS.COMPLETED;
                   const processTime = isDone ? formatProcessingTime(created, completed) : null;
+
+                  const handleDelete = async () => {
+                    if (!window.confirm(`Xóa task "${task.customerName}"?`)) return;
+                    try {
+                      await deleteDoc(doc(db, COLLECTIONS.TASKS, task.id));
+                    } catch (err) {
+                      console.error('Delete error:', err);
+                    }
+                  };
 
                   return (
                     <tr key={task.id} className={isDone ? 'row-completed' : task.isUrgent ? 'row-urgent' : ''}>
@@ -231,6 +241,11 @@ const Analytics = () => {
                       <td className="td-content">{task.content}</td>
                       <td className="td-time">{created ? format(created, 'HH:mm') : '—'}</td>
                       <td className="td-process">{processTime || (isDone ? '—' : '...')}</td>
+                      <td>
+                        <button className="btn-table-delete" onClick={handleDelete} title="Xóa">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}

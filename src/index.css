@@ -634,6 +634,19 @@ body::after {
 .tb-urgent { background: var(--danger-bg); color: var(--danger); }
 .tb-pending { background: var(--warning-bg); color: var(--warning); }
 
+.btn-table-delete {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.4;
+}
+.btn-table-delete:hover {
+  color: #FCA5A5; background: var(--danger-bg); opacity: 1;
+}
+.history-table tbody tr:hover .btn-table-delete { opacity: 0.8; }
+
 /* ─── Insight Card ─────────────────────────────────────────── */
 .insight-card {
   margin-top: 0; padding: 1.5rem; border-radius: var(--radius-lg);
