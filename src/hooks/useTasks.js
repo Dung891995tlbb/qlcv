@@ -12,9 +12,10 @@ import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
 import { toDate, taskSortComparator, playNotificationSound } from '../lib/utils';
 
 // ─── On-Screen Debug Logger (xem trực tiếp trên điện thoại) ────
-const DEBUG = true;
+// Bật bằng cách thêm ?debug=true vào URL, ví dụ: https://your-app.vercel.app/?debug=true
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
 let snapshotCount = 0;
-const MAX_LOGS = 30;
+const MAX_LOGS = 50;
 
 // Create debug panel on page
 const getPanel = () => {
@@ -55,27 +56,32 @@ const getPanel = () => {
 };
 
 const log = (...args) => {
-  if (!DEBUG) return;
   const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
   const text = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
   const msg = `[${time}] ${text}`;
 
-  // Console
+  // Always log to console (lightweight)
   console.log(`%c${msg}`, 'color: #4ADE80; font-weight: bold;');
 
-  // On-screen panel
+  // On-screen panel only when DEBUG mode
+  if (!DEBUG) return;
+  
   const panel = getPanel();
   const line = document.createElement('div');
   line.textContent = msg;
   if (text.includes('❌') || text.includes('ERROR')) line.style.color = '#F87171';
   if (text.includes('➕')) line.style.color = '#60A5FA';
   if (text.includes('✅')) line.style.color = '#FCD34D';
+  if (text.includes('🔔') || text.includes('OneSignal') || text.includes('Noti')) line.style.color = '#818CF8';
   panel.appendChild(line);
 
   // Keep max lines
   while (panel.children.length > MAX_LOGS) panel.removeChild(panel.firstChild);
   panel.scrollTop = panel.scrollHeight;
 };
+
+// Expose log globally
+window.log = log;
 
 /**
  * @param {Function} onToast - Toast callback (type, message)

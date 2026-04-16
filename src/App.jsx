@@ -87,33 +87,45 @@ function App() {
 
   // ─── OneSignal Initialization ─────────────────────────────────
   useEffect(() => {
-    const APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || "433cb78d-2f07-43e7-869b-2bbc90800ba4";
+    const APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID;
+    const log = window.log || console.log;
+
+    if (!APP_ID) {
+      log('⚠️ [OneSignal] VITE_ONESIGNAL_APP_ID chưa được cấu hình. Push notification sẽ không hoạt động.');
+      return;
+    }
     
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function (OneSignal) {
       if (OneSignal.initialized) return; // Prevent double init
       
-      await OneSignal.init({
-        appId: APP_ID,
-        allowLocalhostAsHTTP: true, // Useful for development testing
-        notifyButton: {
-          enable: false, // We use the custom Bell button in AppHeader instead
-        },
-      });
-      console.log('🔔 OneSignal Initialized');
-      
-      // Log current subscription status
-      const isPushEnabled = await OneSignal.Notifications.permission;
-      console.log('📢 Notification Permission:', isPushEnabled ? 'GRANTED' : 'DENIED/NOT REQUESTED');
-      
-      OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-        console.log("🔄 Push Subscription Changed:", event.current);
-      });
-      
-      const sub = await OneSignal.User.PushSubscription;
-      console.log('🆔 Push Subscription ID:', sub.id || 'N/A');
-      console.log('🌐 Push Subscription Token:', sub.token || 'N/A');
-      console.log('✅ Is Subscribed:', sub.optedIn);
+      try {
+        await OneSignal.init({
+          appId: APP_ID,
+          allowLocalhostAsHTTP: true,
+          notifyButton: {
+            enable: false, // We use the custom Bell button in AppHeader instead
+          },
+        });
+        log('🔔 [OneSignal] Initialized successfully');
+        
+        // Log current subscription status
+        const isPushEnabled = await OneSignal.Notifications.permission;
+        log(`📢 [OneSignal] Permission: ${isPushEnabled ? 'GRANTED ✅' : 'DENIED/NOT REQUESTED ❌'}`);
+        
+        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          log("🔄 [OneSignal] Subscription changed:", JSON.stringify({
+            id: event.current?.id || 'N/A',
+            optedIn: event.current?.optedIn,
+          }));
+        });
+        
+        const sub = await OneSignal.User.PushSubscription;
+        log(`🆔 [OneSignal] Sub ID: ${sub.id || 'N/A'}`);
+        log(`✅ [OneSignal] Opted In: ${sub.optedIn}`);
+      } catch (err) {
+        log(`❌ [OneSignal] Init error: ${err.message}`);
+      }
     });
   }, []);
 

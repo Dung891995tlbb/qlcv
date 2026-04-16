@@ -9,6 +9,7 @@ import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COLLECTIONS, TASK_STATUS, THRESHOLDS } from '../lib/constants';
 import { toDate, formatDuration, formatProcessingTime } from '../lib/utils';
+import { sendAppNotification } from '../lib/onesignal';
 
 const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const [completing, setCompleting] = useState(false);
@@ -41,13 +42,22 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
         completedAt: serverTimestamp(),
       });
       onToast?.('success', `Hoàn thành: ${task.customerName}`);
+
+      // ─── Push noti khi hoàn thành task ───────────────────────
+      try {
+        const title = '✅ Đã hoàn thành: ' + task.customerName;
+        const body = `📍 ${task.address || 'Không có địa chỉ'}\n📝 ${task.content}`;
+        await sendAppNotification(title, body);
+      } catch (notiErr) {
+        (window.log || console.error)('❌ [TaskCard] Noti error:', notiErr.message);
+      }
     } catch (err) {
       console.error('Complete task error:', err);
       onToast?.('error', 'Lỗi cập nhật trạng thái!');
     } finally {
       setCompleting(false);
     }
-  }, [task.id, task.customerName, onToast]);
+  }, [task.id, task.customerName, task.address, task.content, onToast]);
 
   const handleDelete = useCallback(async () => {
     if (!window.confirm('Xác nhận xóa vĩnh viễn công việc này?')) return;
