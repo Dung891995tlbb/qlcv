@@ -56,7 +56,10 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        Authorization: `Basic ${REST_API_KEY}`,
+        // v2 keys (os_v2_*) use "Key", legacy keys use "Basic"
+        Authorization: REST_API_KEY.startsWith('os_v2_')
+          ? `Key ${REST_API_KEY}`
+          : `Basic ${REST_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });
