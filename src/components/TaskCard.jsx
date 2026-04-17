@@ -16,6 +16,7 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
+  const [hiding, setHiding] = useState(false);
 
   // ─── Derived values ─────────────────────────────────────────
   const createdDate = useMemo(() => toDate(task.createdAt), [task.createdAt]);
@@ -34,7 +35,9 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
 
   const statusClass = isCompleted ? 'completed' : task.isUrgent ? 'urgent' : 'pending';
   const badgeClass = isCompleted ? 'badge-completed' : task.isUrgent ? 'badge-urgent' : 'badge-pending';
-  const badgeText = isCompleted ? '✓ Đã xong' : task.isUrgent ? '⚡ GẤP' : 'Chờ xử lý';
+  const badgeText = isCompleted ? '✓ Đã xong' : task.isUrgent ? (
+    <><span className="urgent-shake-icon inline-block">⚡</span> GẤP</>
+  ) : '○ Chờ xử lý';
 
   // ─── Edit Handlers ──────────────────────────────────────────
   const startEdit = useCallback(() => {
@@ -79,8 +82,12 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   // ─── Complete Handler ───────────────────────────────────────
   const handleComplete = useCallback(async () => {
     setCompleting(true);
-    try {
-      await updateDoc(doc(db, COLLECTIONS.TASKS, task.id), {
+    setHiding(true); // Kích hoạt CSS biến mất mượt mà
+    
+    // Đợi 400ms cho animation chạy xong rồi mới update DB (tạo cảm giác task lướt đi)
+    setTimeout(async () => {
+      try {
+        await updateDoc(doc(db, COLLECTIONS.TASKS, task.id), {
         status: TASK_STATUS.COMPLETED,
         completedAt: serverTimestamp(),
       });
@@ -98,9 +105,11 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
     } catch (err) {
       console.error('Complete task error:', err);
       onToast?.('error', 'Lỗi cập nhật trạng thái!');
+      setHiding(false); // Rollback animation nếu lỗi
     } finally {
       setCompleting(false);
     }
+    }, 400); // 400ms delay
   }, [task.id, task.customerName, task.address, task.content, onToast]);
 
   const handleDelete = useCallback(async () => {
@@ -175,7 +184,10 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
 
   // ─── Render: Normal Mode ────────────────────────────────────
   return (
-    <div className={`glass task-card fade-in ${statusClass}`}>
+    <div 
+      className={`glass task-card fade-in ${statusClass} ${hiding ? 'hiding' : ''}`}
+      id={`task-card-${task.id}`}
+    >
       <div className="task-header">
         <div className={`task-timer ${isDelayed ? 'timer-urgent' : ''}`}>
           <Clock size={14} />
