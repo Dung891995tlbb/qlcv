@@ -80,7 +80,17 @@ const TaskCard = ({ task, onToast, now, isAdmin }) => {
   }, []);
 
   // ─── Complete Handler ───────────────────────────────────────
-  const handleComplete = useCallback(async () => {
+  const handleComplete = useCallback(async (e) => {
+    // Bắn pháo giấy từ vị trí con trỏ chuột/tay chạm
+    if (e && e.clientX && window.confetti) {
+      window.confetti({
+        particleCount: 60,
+        spread: 80,
+        origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+        colors: ['#4ADE80', '#22C55E', '#ffffff', '#FCD34D']
+      });
+    }
+
     setCompleting(true);
     setHiding(true); // Kích hoạt CSS biến mất mượt mà
     
