@@ -42,15 +42,6 @@ const AdminView = ({ addToast }) => (
       <section className="sidebar">
         <div className="sidebar-sticky">
           <TaskForm onToast={addToast} />
-          <div className="glass tips-card">
-            <div className="tips-title">Quản trị viên</div>
-            <ul className="tips-list">
-              <li>Hoàn thành task để lưu lịch sử</li>
-              <li>Sắp xếp tự động theo mức độ gấp</li>
-              <li>Thông báo âm thanh thời gian thực</li>
-              <li>Dữ liệu bảo mật trên Cloud</li>
-            </ul>
-          </div>
         </div>
       </section>
 
@@ -94,7 +85,7 @@ function App() {
     log(`🌐 URL: ${window.location.href}`);
     log(`🔑 VITE_ONESIGNAL_APP_ID: ${import.meta.env.VITE_ONESIGNAL_APP_ID ? '✅ SET' : '❌ MISSING'}`);
     log(`📜 OneSignal SDK: ${typeof window.OneSignalDeferred !== 'undefined' || typeof window.OneSignal !== 'undefined' ? '✅ LOADED' : '❌ NOT LOADED'}`);
-    
+
     log('📜 App Initialization Complete');
     log('═══════════════════════════════════════');
   }, []);
@@ -108,11 +99,11 @@ function App() {
       log('⚠️ [OneSignal] VITE_ONESIGNAL_APP_ID chưa được cấu hình. Push notification sẽ không hoạt động.');
       return;
     }
-    
+
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function (OneSignal) {
       if (OneSignal.initialized) return; // Prevent double init
-      
+
       try {
         await OneSignal.init({
           appId: APP_ID,
@@ -122,18 +113,18 @@ function App() {
           },
         });
         log('🔔 [OneSignal] Initialized successfully');
-        
+
         // Log current subscription status
         const isPushEnabled = await OneSignal.Notifications.permission;
         log(`📢 [OneSignal] Permission: ${isPushEnabled ? 'GRANTED ✅' : 'DENIED/NOT REQUESTED ❌'}`);
-        
+
         OneSignal.User.PushSubscription.addEventListener("change", (event) => {
           log("🔄 [OneSignal] Subscription changed:", JSON.stringify({
             id: event.current?.id || 'N/A',
             optedIn: event.current?.optedIn,
           }));
         });
-        
+
         const sub = await OneSignal.User.PushSubscription;
         log(`🆔 [OneSignal] Sub ID: ${sub.id || 'N/A'}`);
         log(`✅ [OneSignal] Opted In: ${sub.optedIn}`);
