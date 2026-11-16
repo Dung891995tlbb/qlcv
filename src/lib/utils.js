@@ -4,6 +4,9 @@
  */
 import { differenceInMinutes, differenceInSeconds } from 'date-fns';
 
+// LAN previews use HTTP, where crypto.randomUUID may be unavailable.
+export const createId = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
 // ─── Firestore Helpers ──────────────────────────────────────────
 
 /** Safely convert a Firestore Timestamp (or date string) to a JS Date. */
@@ -76,6 +79,7 @@ export const playNotificationSound = () => {
     osc.connect(gain).connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 1.2);
+    osc.onended = () => { void ctx.close(); };
   } catch (err) {
     console.error('Audio playback failed:', err);
   }

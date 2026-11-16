@@ -1,155 +1,119 @@
-/**
- * TaskForm — Create new task form with urgent toggle.
- */
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { COLLECTIONS, TASK_STATUS } from '../lib/constants';
-import { PlusCircle, Send } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { Check, FileText, Wifi, Printer, Plus, ArrowUpRight, Zap, LoaderCircle } from 'lucide-react';
+import { createTask, editTask, QUICK_TASKS } from '../lib/taskStore';
+import { isLocalPreview } from '../firebase';
 import { sendAppNotification } from '../lib/onesignal';
 
-const INITIAL_FORM = Object.freeze({
-  customerName: '',
-  address: '',
-  content: '',
-  isUrgent: false,
-});
+const emptyForm = { customerName: '', address: '', categories: [], details: '', isUrgent: false };
+const icons = [FileText, Wifi, Printer];
+const DRAFT_KEY = 'qlcv.task-draft.v1';
 
-const TaskForm = ({ onToast }) => {
-  const [formData, setFormData] = useState({ ...INITIAL_FORM });
-  const [loading, setLoading] = useState(false);
-  const nameInputRef = useRef(null);
+function getInitialForm(task) {
+  if (task) return { customerName: task.customerName, address: task.address || '', categories: task.categories || [], details: task.details ?? task.content, isUrgent: !!task.isUrgent };
+  try { return { ...emptyForm, ...JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') }; }
+  catch { return { ...emptyForm }; }
+}
 
-  useEffect(() => {
-    nameInputRef.current?.focus();
-  }, []);
+export default function TaskForm({ task, onToast, onClose, inline = false }) {
+  const formId = useId();
+  const [form, setForm] = useState(() => getInitialForm(task));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [savedMessage, setSavedMessage] = useState('');
+  const detailsRef = useRef(null);
 
-  // Controlled field updater
-  const updateField = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  }, []);
+  useLayoutEffect(() => {
+    const textarea = detailsRef.current;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight + 2, 172)}px`;
+  }, [form.details]);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    const name = formData.customerName.trim();
-    const content = formData.content.trim();
-    if (!name || !content) return;
+  const update = (field, value) => {
+    const next = { ...form, [field]: value };
+    setForm(next);
+    setError('');
+    setSavedMessage('');
+    if (!task) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next));
+  };
 
-    setLoading(true);
-    try {
-      await addDoc(collection(db, COLLECTIONS.TASKS), {
-        customerName: name,
-        address: formData.address.trim(),
-        content,
-        status: TASK_STATUS.PENDING,
-        isUrgent: formData.isUrgent,
-        createdAt: serverTimestamp(),
-      });
-
-      setFormData({ ...INITIAL_FORM });
-      nameInputRef.current?.focus();
-      onToast?.('success', 'Khởi tạo công việc thành công!');
-
-      // ─── Trigger OneSignal Push Notification ────────────────────
-      try {
-        const log = window.log || console.log;
-        log("📝 [TaskForm] Preparing push notification...");
-        const addr = formData.address ? ` · ${formData.address}` : '';
-        const title = formData.isUrgent ? '🚨 QLCV · Lệnh GẤP' : 'QLCV · Công việc mới';
-        const body = `${name}${addr} — ${content}`;
-        
-        const result = await sendAppNotification(title, body, { urgent: formData.isUrgent, url: '/admin' });
-        log("✅ [TaskForm] Notification sent:", result);
-      } catch (e) {
-        (window.log || console.error)('❌ [TaskForm] OneSignal Error:', e);
-      }
-    } catch (err) {
-      console.error('Add task error:', err);
-      onToast?.('error', 'Lỗi kết nối cơ sở dữ liệu!');
-    } finally {
-      setLoading(false);
+  const submit = async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    if (!form.categories.length && !form.details.trim()) {
+      setError('Chọn ít nhất một công việc hoặc nhập nội dung khác.');
+      return;
     }
-  }, [formData, onToast]);
-
-  const toggleUrgent = useCallback(() => {
-    setFormData((prev) => ({ ...prev, isUrgent: !prev.isUrgent }));
-  }, []);
+    const formElement = event.currentTarget;
+    const keepOpen = inline || event.nativeEvent.submitter?.value === 'continue';
+    setSaving(true);
+    const data = {
+      customerName: form.customerName.trim(), address: form.address.trim(), categories: form.categories,
+      details: form.details.trim(), isUrgent: form.isUrgent,
+      content: [form.categories.join(' · '), form.details.trim()].filter(Boolean).join(' — '),
+    };
+    if (!data.customerName) { setError('Vui lòng nhập tên người cần hỗ trợ.'); setSaving(false); return; }
+    try {
+      if (task) await editTask(task.id, data);
+      else await createTask({ ...data, status: 'pending' });
+      if (!task) sessionStorage.removeItem(DRAFT_KEY);
+      onToast('success', task ? 'Đã lưu thay đổi' : 'Đã giao công việc mới');
+      if (!task && !isLocalPreview) {
+        void sendAppNotification(data.isUrgent ? '🚨 QLCV · Việc gấp' : 'QLCV · Công việc mới', `${data.customerName} — ${data.content}`, { urgent: data.isUrgent, url: '/' })
+          .then((result) => { if (result?.error) onToast('error', 'Đã lưu việc, nhưng chưa gửi được thông báo.'); })
+          .catch(() => onToast('error', 'Đã lưu việc, nhưng chưa gửi được thông báo.'));
+      }
+      if (keepOpen) {
+        setForm({ ...emptyForm });
+        setSavedMessage('Đã giao việc. Bạn có thể nhập công việc tiếp theo.');
+        requestAnimationFrame(() => formElement.querySelector('input')?.focus());
+      } else onClose();
+    } catch {
+      setError('Chưa lưu được công việc. Kiểm tra kết nối và thử lại.');
+    } finally { setSaving(false); }
+  };
 
   return (
-    <div className="glass form-card fade-in">
-      <h2 className="form-title">
-        <PlusCircle size={22} className="text-gradient" />
-        <span>Giao Việc Mới</span>
-      </h2>
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label">Tên khách hàng</label>
-          <input
-            ref={nameInputRef}
-            type="text"
-            className="form-input"
-            placeholder="Nhập tên khách..."
-            value={formData.customerName}
-            onChange={(e) => updateField('customerName', e.target.value)}
-            required
-            autoComplete="off"
-          />
+    <form className={`task-form ${inline ? 'inline-task-form' : ''}`} onSubmit={submit}>
+      <div className="sheet-content">
+        {savedMessage && <p className="form-success" role="status"><Check size={16} />{savedMessage}</p>}
+        <div className="field-group">
+          <label htmlFor={`${formId}-customer-name`}>Người cần hỗ trợ <span className="required">*</span></label>
+          <input id={`${formId}-customer-name`} placeholder="Ví dụ: Chị Hà, phòng Hành chính" value={form.customerName} onChange={(event) => update('customerName', event.target.value)} required maxLength={120} autoComplete="name" disabled={saving} />
         </div>
-
-        <div className="form-group">
-          <label className="form-label">Địa chỉ</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Khu vực / Số nhà..."
-            value={formData.address}
-            onChange={(e) => updateField('address', e.target.value)}
-            autoComplete="off"
-          />
+        <div className="field-group">
+          <label htmlFor={`${formId}-task-address`}>Địa chỉ / Phòng ban <span className="optional">Không bắt buộc</span></label>
+          <input id={`${formId}-task-address`} placeholder="Phòng ban, tầng hoặc địa chỉ…" value={form.address} onChange={(event) => update('address', event.target.value)} maxLength={250} disabled={saving} />
         </div>
-
-        <div className="form-group">
-          <label className="form-label">Yêu cầu chi tiết</label>
-          <textarea
-            rows="3"
-            className="form-textarea"
-            placeholder="Nội dung công việc cần xử lý..."
-            value={formData.content}
-            onChange={(e) => updateField('content', e.target.value)}
-            required
-          />
-        </div>
-
-        <div
-          className={`urgent-toggle ${formData.isUrgent ? 'active' : ''}`}
-          onClick={toggleUrgent}
-        >
-          <input
-            type="checkbox"
-            checked={formData.isUrgent}
-            readOnly
-            className="urgent-checkbox"
-          />
-          <div className="urgent-label">
-            <span className="urgent-title">CHẾ ĐỘ ƯU TIÊN (GẤP)</span>
-            <span className="urgent-subtitle">Đẩy lệnh lên đầu danh sách</span>
+        <fieldset className="quick-fieldset" disabled={saving}>
+          <legend>Công việc <span className="optional">Có thể chọn nhiều</span></legend>
+          <div className="quick-options">
+            {QUICK_TASKS.map((label, index) => {
+              const Icon = icons[index];
+              const selected = form.categories.includes(label);
+              return <label className={`quick-option ${selected ? 'selected' : ''}`} key={label}>
+                <input type="checkbox" checked={selected} onChange={() => update('categories', selected ? form.categories.filter((value) => value !== label) : [...form.categories, label])} />
+                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
+                <span className="quick-check" aria-hidden="true">{selected && <Check size={11} strokeWidth={3} />}</span>
+              </label>;
+            })}
           </div>
+        </fieldset>
+        <div className="field-group">
+          <label htmlFor={`${formId}-task-details`}>Chi tiết / Công việc khác</label>
+          <textarea ref={detailsRef} id={`${formId}-task-details`} placeholder="Chi tiết hoặc công việc khác…" value={form.details} onChange={(event) => update('details', event.target.value)} rows={1} maxLength={2000} disabled={saving} aria-describedby={error ? `${formId}-form-error` : undefined} />
         </div>
-
-        <button type="submit" disabled={loading} className="btn-submit">
-          {loading ? (
-            'Đang khởi tạo...'
-          ) : (
-            <>
-              <Send size={18} />
-              <span>GỬI LỆNH ĐIỀU PHỐI</span>
-            </>
-          )}
-        </button>
-      </form>
-    </div>
+        <label className={`urgent-option ${form.isUrgent ? 'selected' : ''}`}>
+          <span className="urgent-option-icon"><Zap size={17} /></span>
+          <span className="urgent-option-text"><strong>Việc gấp</strong></span>
+          <input type="checkbox" role="switch" checked={form.isUrgent} onChange={(event) => update('isUrgent', event.target.checked)} disabled={saving} />
+          <span className="switch-track" aria-hidden="true" />
+        </label>
+        {error && <p id={`${formId}-form-error`} className="form-error" role="alert">{error}</p>}
+      </div>
+      <div className="sheet-footer">
+        {!task && !inline && <button className="button button-secondary" type="submit" value="continue" disabled={saving}><Plus size={17} /> Giao & nhập tiếp</button>}
+        <button className="button button-primary" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={19} /> : <ArrowUpRight size={19} />}{saving ? 'Đang lưu…' : task ? 'Lưu thay đổi' : 'Giao việc'}</button>
+      </div>
+    </form>
   );
-};
-
-export default TaskForm;
+}

@@ -11,16 +11,17 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
+export const isLocalPreview = import.meta.env.VITE_LOCAL_PREVIEW === 'true';
+const app = isLocalPreview ? null : initializeApp(firebaseConfig);
 
 // Firestore: dùng persistentSingleTabManager với forceOwnership
 // để đảm bảo tab này LUÔN là primary tab → nhận mọi update từ server.
 // persistentMultipleTabManager dùng SharedWorker (không hỗ trợ đầy đủ trên mobile)
 // khiến tab không bao giờ trở thành primary → không nhận document mới.
-const db = initializeFirestore(app, {
+const db = app ? initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentSingleTabManager({ forceOwnership: true })
   })
-});
+}) : null;
 
 export { db };

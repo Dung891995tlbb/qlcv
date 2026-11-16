@@ -1,58 +1,22 @@
-/**
- * AppHeader — Shared page header with icon, title, navigation, and sync status.
- * Supports variant prop for different icon backgrounds per view.
- */
-import React from 'react';
+import { useState } from 'react';
+import { Bell, Check, Layers2 } from 'lucide-react';
 import SyncBadge from './SyncBadge';
-import { Bell } from 'lucide-react';
-import { promptForPushNotifications } from '../lib/onesignal';
+import { isLocalPreview } from '../firebase';
 
-const AppHeader = ({ icon, title, syncLabel, variant, children }) => {
-  const handleBellClick = async () => {
-    const log = window.log || console.log;
-    log('─── 🔔 BELL BUTTON PRESSED ───');
-    
-    // Step 1: Request permission
-    promptForPushNotifications();
-    
-    // Step 2: Log OneSignal status
-    try {
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        const permission = await OneSignal.Notifications.permission;
-        const sub = await OneSignal.User.PushSubscription;
-        log(`🔔 [Bell] Permission: ${permission ? 'GRANTED ✅' : 'DENIED ❌'}`);
-        log(`🔔 [Bell] Sub ID: ${sub?.id || 'N/A'}`);
-        log(`🔔 [Bell] Opted In: ${sub?.optedIn}`);
-      });
-    } catch (e) {
-      log(`❌ [Bell] OneSignal check error: ${e.message}`);
-    }
+export default function AppHeader({ sync, onToast }) {
+  const [subscribed, setSubscribed] = useState(false);
+  const handleBellClick = () => {
+    if (isLocalPreview) { onToast('info', 'Bản local không gửi thông báo thật.'); return; }
+    if (!import.meta.env.VITE_ONESIGNAL_APP_ID) { onToast('error', 'Chưa cấu hình thông báo trên thiết bị này.'); return; }
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      try {
+        await OneSignal.Notifications.requestPermission();
+        const enabled = OneSignal.Notifications.permission;
+        setSubscribed(enabled);
+        onToast(enabled ? 'success' : 'info', enabled ? 'Đã bật thông báo trên thiết bị' : 'Cho phép thông báo trong cài đặt trình duyệt để nhận việc mới.');
+      } catch { onToast('error', 'Chưa bật được thông báo. Vui lòng thử lại.'); }
+    });
   };
-
-  return (
-    <header className="app-header">
-      <div className="header-left">
-        <div className={`header-icon ${variant ? `header-icon--${variant}` : ''}`}>
-          {icon}
-        </div>
-        <div>
-          <h1 className="header-title">{title}</h1>
-          {children && <nav className="nav-links">{children}</nav>}
-        </div>
-      </div>
-      <div className="header-right">
-        <button 
-          className="btn-icon bell-btn" 
-          onClick={handleBellClick}
-          title="Bật thông báo"
-        >
-          <Bell size={20} />
-        </button>
-        <SyncBadge label={syncLabel} />
-      </div>
-    </header>
-  );
-};
-
-export default React.memo(AppHeader);
+  return <header className="app-header"><div className="header-inner"><a href="/" className="brand" aria-label="QLCV · Trang công việc"><span className="brand-mark"><Layers2 size={22} strokeWidth={2} /></span><span>qlcv<span className="brand-period">.</span></span></a><div className="header-right"><SyncBadge sync={sync} /><button className={`icon-button notification-button ${subscribed ? 'subscribed' : ''}`} onClick={handleBellClick} aria-label={subscribed ? 'Đã bật thông báo' : 'Bật thông báo'}>{subscribed ? <Check size={20} /> : <Bell size={20} />}</button></div></div></header>;
+}
