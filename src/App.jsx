@@ -88,7 +88,7 @@ function AppContent() {
     {isAdmin ? <section className="admin-create" aria-label="Giao công việc">
       <div className="admin-create-heading"><p className="eyebrow">{format(now, 'EEEE, dd MMMM yyyy', { locale: vi })}</p></div>
       <TaskForm inline onToast={addToast} />
-    </section> : <div className="page-heading"><div><p className="eyebrow">{format(now, 'EEEE, dd MMMM', { locale: vi })}</p><h1>Công việc<span className="heading-dot">.</span></h1><p className="page-description">Nắm rõ từng việc. Hỗ trợ kịp thời.</p></div><button className="button button-primary desktop-create" onClick={() => setSheet({ type: 'create' })}><Plus size={19} /> Giao việc mới</button></div>}
+    </section> : <div className="page-heading"><div><p className="eyebrow">{format(now, 'EEEE, dd MMMM', { locale: vi })}</p></div><button className="button button-primary desktop-create" onClick={() => setSheet({ type: 'create' })}><Plus size={19} /> Giao việc mới</button></div>}
     <div className={isAdmin ? 'work-overview compact-overview' : 'work-overview'}>
     {isAdmin && <h2 className="work-overview-title">Danh sách công việc</h2>}
     <div className="summary-grid" aria-label="Tổng quan công việc">
