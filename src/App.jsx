@@ -13,7 +13,7 @@ import useTimer from './hooks/useTimer';
 import { completeTask, editTask, removeTask } from './lib/taskStore';
 import { createId, toDate } from './lib/utils';
 import { isLocalPreview } from './firebase';
-import { sendAppNotification } from './lib/onesignal';
+import { initializePushNotifications, sendAppNotification } from './lib/onesignal';
 
 function AppContent() {
   const { pathname } = useLocation();
@@ -45,14 +45,11 @@ function AppContent() {
   }, [dismissToast]);
 
   useEffect(() => {
-    const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
-    if (isLocalPreview || !appId) return;
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal) => {
-      if (OneSignal.initialized) return;
-      try { await OneSignal.init({ appId, allowLocalhostAsHTTP: true, notifyButton: { enable: false } }); }
-      catch (failure) { console.error('Notification initialization failed:', failure); }
+    let active = true;
+    void initializePushNotifications().catch((failure) => {
+      if (active) console.error('Notification initialization failed:', failure);
     });
+    return () => { active = false; };
   }, []);
 
   const handleComplete = async (task) => {
@@ -88,8 +85,8 @@ function AppContent() {
     {isAdmin ? <section className="admin-create" aria-label="Giao công việc">
       <div className="admin-create-heading"><p className="eyebrow">{format(now, 'EEEE, dd MMMM yyyy', { locale: vi })}</p></div>
       <TaskForm inline onToast={addToast} />
-    </section> : <div className="page-heading"><div><p className="eyebrow">{format(now, 'EEEE, dd MMMM', { locale: vi })}</p></div><button className="button button-primary desktop-create" onClick={() => setSheet({ type: 'create' })}><Plus size={19} /> Giao việc mới</button></div>}
-    <div className={isAdmin ? 'work-overview compact-overview' : 'work-overview'}>
+    </section> : <div className="page-heading"><div><p className="eyebrow">{format(now, 'EEEE, dd MMMM yyyy', { locale: vi })}</p></div><button className="button button-primary desktop-create" onClick={() => setSheet({ type: 'create' })}><Plus size={19} /> Giao việc mới</button></div>}
+    <div className="work-overview compact-overview">
     {isAdmin && <h2 className="work-overview-title">Danh sách công việc</h2>}
     <div className="summary-grid" aria-label="Tổng quan công việc">
       <div className="summary-card"><span className="summary-icon blue"><Clock3 size={19} /></span><strong>{loading ? '—' : pending.length}</strong><span>Đang chờ</span></div>

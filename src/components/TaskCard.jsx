@@ -37,9 +37,11 @@ export default function TaskCard({ task, now, onComplete, onEdit, onDelete }) {
       </div>
       <h3>{task.customerName}</h3>
       {details && <p className="task-description">{details}</p>}
-      {task.address && <a className="task-address" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.address)}`} target="_blank" rel="noreferrer"><MapPin size={15} /><span>{task.address}</span><ArrowUpRight size={13} /></a>}
       <div className="task-bottomline">
-        <span className={`task-time ${!done && minutes >= 30 ? 'time-delayed' : ''}`}><Clock3 size={14} />{time}</span>
+        <div className="task-meta">
+          {task.address && <a className="task-address" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.address)}`} target="_blank" rel="noreferrer"><MapPin size={14} /><span>{task.address}</span><ArrowUpRight size={12} /></a>}
+          <span className={`task-time ${!done && minutes >= 30 ? 'time-delayed' : ''}`}><Clock3 size={14} />{time}</span>
+        </div>
         {done ? <span className="done-time">{toDate(task.completedAt) ? format(toDate(task.completedAt), 'HH:mm') : ''}<Check size={16} /></span> : <button className="complete-button" onClick={complete} disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <Check size={17} />} {busy ? 'Đang lưu…' : 'Hoàn thành'}</button>}
       </div>
     </article>

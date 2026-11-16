@@ -90,7 +90,7 @@ export default function TaskForm({ task, onToast, onClose, inline = false }) {
             {QUICK_TASKS.map((label, index) => {
               const Icon = icons[index];
               const selected = form.categories.includes(label);
-              return <label className={`quick-option ${selected ? 'selected' : ''}`} key={label}>
+              return <label className={`quick-option category-${label === 'HSCV' ? 'document' : label === 'Mạng' ? 'network' : 'printer'} ${selected ? 'selected' : ''}`} key={label}>
                 <input type="checkbox" checked={selected} onChange={() => update('categories', selected ? form.categories.filter((value) => value !== label) : [...form.categories, label])} />
                 <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
                 <span className="quick-check" aria-hidden="true">{selected && <Check size={11} strokeWidth={3} />}</span>

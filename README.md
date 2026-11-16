@@ -15,6 +15,8 @@ Chế độ này đọc `.env.preview` (`VITE_LOCAL_PREVIEW=false`) và cấu h�
 
 Mở `/admin` để thấy form giao việc sẵn ở đầu trang; gửi xong form được làm trống để tiếp tục nhập. `/` giữ giao diện danh sách công việc.
 
+Đăng ký nhận push chỉ khởi tạo ở origin OneSignal đã cấu hình (mặc định `https://qlcv-bay.vercel.app`). Local vẫn đọc/ghi Firestore thật và gửi thông báo qua API; nút chuông trên local hướng dẫn mở trang chính thức để đăng ký nhận push. Nếu cần kiểm thử đăng ký trên localhost, dùng OneSignal app riêng cho local và đặt đồng thời `VITE_ONESIGNAL_APP_ID`, `VITE_ONESIGNAL_SITE_ORIGIN` khớp cấu hình của app đó.
+
 - Chọn nhiều mục **HSCV / Mạng / Máy in**, hoặc nhập công việc khác.
 - Đóng form vẫn giữ bản nháp trong phiên trình duyệt.
 - Tìm kiếm, lọc loại việc và việc gấp.

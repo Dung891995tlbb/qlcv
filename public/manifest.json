@@ -8,7 +8,7 @@
   "description": "Hệ thống quản lý công việc và điều phối nhân sự thời gian thực",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/favicon.svg?v=2",
       "sizes": "192x192 256x256 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"

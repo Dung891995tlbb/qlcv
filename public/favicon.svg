@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="19" fill="#315df5"/><g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m32 15 20 11-20 11-20-11 20-11Z"/><path d="m12 35 20 11 20-11"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>QLCV</title>
+  <defs>
+    <linearGradient id="base" x1="8" y1="3" x2="60" y2="66" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6487F5"/>
+      <stop offset=".52" stop-color="#4165D8"/>
+      <stop offset="1" stop-color="#247C89"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="8" y1="0" x2="54" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity=".32"/>
+      <stop offset="1" stop-color="white" stop-opacity=".04"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="20" fill="url(#base)"/>
+  <rect x=".75" y=".75" width="62.5" height="62.5" rx="19.25" stroke="url(#rim)" stroke-width="1.5"/>
+  <path d="m18 33 9 9 19-19M35 23h11v11" stroke="white" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
